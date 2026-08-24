@@ -1,0 +1,16 @@
+targets:
+  $default:
+    builders:
+      wb_generate|wb_device:
+        enabled: true
+    sources:
+      exclude:
+        - test/fixtures/missing_idevice.dart
+
+builders:
+  wb_device:
+    import: "package:wb_generate/builder.dart"
+    builder_factories: ["wbDeviceBuilder"]
+    build_extensions: {".dart": [".wb.g.dart"]}
+    auto_apply: dependents
+    build_to: source
