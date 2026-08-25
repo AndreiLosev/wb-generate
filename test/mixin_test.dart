@@ -3,19 +3,26 @@ import 'package:wb_annatation/wb_annatation.dart';
 
 import 'fixtures/room_light.dart';
 import 'support/mock_mqtt_client.dart';
+import 'support/test_wb_client.dart';
 
 void main() {
   group('RoomLightWbMixin', () {
+    late TestWbClient wbClient;
     late MockWbMqttClient client;
     late RoomLight device;
 
-    setUp(() {
-      client = MockWbMqttClient();
-      device = RoomLight(client);
+    setUpAll(() async {
+      wbClient = await TestWbClient.create();
+      client = wbClient.mock;
     });
 
-    tearDown(() async {
-      await client.close();
+    tearDownAll(() async {
+      await wbClient.disposeForTest();
+    });
+
+    setUp(() {
+      client.publishes.clear();
+      device = RoomLight();
     });
 
     test('init публикует meta устройства и контролов', () {

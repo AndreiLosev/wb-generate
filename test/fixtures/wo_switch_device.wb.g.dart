@@ -32,7 +32,7 @@ mixin WoSwitchDeviceWbMixin {
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
-    (this as WoSwitchDevice).mqtt.publish(
+    WbClient.getInstanse().publish(
       _deviceMetaTopic,
       _deviceMetaJson,
       retained: true,
@@ -40,21 +40,20 @@ mixin WoSwitchDeviceWbMixin {
 
     for (final entry in _controlMetaJson.entries) {
       final topic = 'wo_switch_device/${entry.key}/meta';
-      (this as WoSwitchDevice).mqtt.publish(topic, entry.value, retained: true);
+      WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
 
     setRelay((this as WoSwitchDevice).relay);
   }
 
   void setRelay(bool value) {
-    (this as WoSwitchDevice).mqtt.publish(
+    WbClient.getInstanse().publish(
       _outputValueTopics['relay']!,
       WbValueCodec.encode(value, WbControlType.woSwitch),
       retained: true,
     );
   }
 
-  @override
   void updateField(WbMqttMessage mess) {
     final device = this as WoSwitchDevice;
     switch (mess.topic) {

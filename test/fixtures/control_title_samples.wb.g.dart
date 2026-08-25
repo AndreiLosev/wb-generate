@@ -34,7 +34,7 @@ mixin ControlTitleSamplesWbMixin {
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
-    (this as ControlTitleSamples).mqtt.publish(
+    WbClient.getInstanse().publish(
       _deviceMetaTopic,
       _deviceMetaJson,
       retained: true,
@@ -42,15 +42,10 @@ mixin ControlTitleSamplesWbMixin {
 
     for (final entry in _controlMetaJson.entries) {
       final topic = 'title_samples/${entry.key}/meta';
-      (this as ControlTitleSamples).mqtt.publish(
-        topic,
-        entry.value,
-        retained: true,
-      );
+      WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
   }
 
-  @override
   void updateField(WbMqttMessage mess) {
     final device = this as ControlTitleSamples;
     switch (mess.topic) {

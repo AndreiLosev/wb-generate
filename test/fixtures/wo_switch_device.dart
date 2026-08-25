@@ -7,10 +7,7 @@ part 'wo_switch_device.wb.g.dart';
   title: WbLocalizedTitle(en: 'WO Switch Device'),
 )
 class WoSwitchDevice with WoSwitchDeviceWbMixin implements IDevice {
-  WoSwitchDevice(this.mqtt);
-
-  @override
-  final WbMqttClient mqtt;
+  WoSwitchDevice();
 
   @InputControl(type: WbControlType.woSwitch)
   bool feedback = false;

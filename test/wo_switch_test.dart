@@ -2,19 +2,26 @@ import 'package:test/test.dart';
 
 import 'fixtures/wo_switch_device.dart';
 import 'support/mock_mqtt_client.dart';
+import 'support/test_wb_client.dart';
 
 void main() {
   group('WoSwitchDeviceWbMixin', () {
+    late TestWbClient wbClient;
     late MockWbMqttClient client;
     late WoSwitchDevice device;
 
-    setUp(() {
-      client = MockWbMqttClient();
-      device = WoSwitchDevice(client);
+    setUpAll(() async {
+      wbClient = await TestWbClient.create();
+      client = wbClient.mock;
     });
 
-    tearDown(() async {
-      await client.close();
+    tearDownAll(() async {
+      await wbClient.disposeForTest();
+    });
+
+    setUp(() {
+      client.publishes.clear();
+      device = WoSwitchDevice();
     });
 
     test('inputs для wo-switch возвращает базовый топик', () {

@@ -122,13 +122,13 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       )
       ..writeln('  void init() {')
       ..writeln(
-        '    (this as $className).mqtt.publish(_deviceMetaTopic, _deviceMetaJson, retained: true);',
+        '    WbClient.getInstanse().publish(_deviceMetaTopic, _deviceMetaJson, retained: true);',
       )
       ..writeln()
       ..writeln('    for (final entry in _controlMetaJson.entries) {')
       ..writeln("      final topic = '$deviceName/\${entry.key}/meta';")
       ..writeln(
-        '      (this as $className).mqtt.publish(topic, entry.value, retained: true);',
+        '      WbClient.getInstanse().publish(topic, entry.value, retained: true);',
       )
       ..writeln('    }')
       ..writeln();
@@ -146,7 +146,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       final setterName = toSetterName(control.fieldName);
       buffer
         ..writeln('  void $setterName(${control.dartTypeName} value) {')
-        ..writeln('    (this as $className).mqtt.publish(')
+        ..writeln('    WbClient.getInstanse().publish(')
         ..writeln("      _outputValueTopics['${control.mqttName}']!,")
         ..writeln(
           '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',

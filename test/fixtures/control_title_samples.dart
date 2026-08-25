@@ -7,10 +7,7 @@ part 'control_title_samples.wb.g.dart';
   title: WbLocalizedTitle(en: 'Title Samples'),
 )
 class ControlTitleSamples with ControlTitleSamplesWbMixin implements IDevice {
-  ControlTitleSamples(this.mqtt);
-
-  @override
-  final WbMqttClient mqtt;
+  ControlTitleSamples();
 
   @InputControl(type: WbControlType.switch_)
   bool wallSwitch = false;

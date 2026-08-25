@@ -44,7 +44,7 @@ mixin RoomLightWbMixin {
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
-    (this as RoomLight).mqtt.publish(
+    WbClient.getInstanse().publish(
       _deviceMetaTopic,
       _deviceMetaJson,
       retained: true,
@@ -52,7 +52,7 @@ mixin RoomLightWbMixin {
 
     for (final entry in _controlMetaJson.entries) {
       final topic = 'room_light/${entry.key}/meta';
-      (this as RoomLight).mqtt.publish(topic, entry.value, retained: true);
+      WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
 
     setLamp((this as RoomLight).lamp);
@@ -60,7 +60,7 @@ mixin RoomLightWbMixin {
   }
 
   void setLamp(bool value) {
-    (this as RoomLight).mqtt.publish(
+    WbClient.getInstanse().publish(
       _outputValueTopics['lamp']!,
       WbValueCodec.encode(value, WbControlType.switch_),
       retained: true,
@@ -68,14 +68,13 @@ mixin RoomLightWbMixin {
   }
 
   void setMode(String value) {
-    (this as RoomLight).mqtt.publish(
+    WbClient.getInstanse().publish(
       _outputValueTopics['mode']!,
       WbValueCodec.encode(value, WbControlType.text),
       retained: true,
     );
   }
 
-  @override
   void updateField(WbMqttMessage mess) {
     final device = this as RoomLight;
     switch (mess.topic) {

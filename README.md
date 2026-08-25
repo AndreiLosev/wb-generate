@@ -29,11 +29,6 @@ part 'room_light.wb.g.dart';
   title: WbLocalizedTitle(en: 'Room Light', ru: 'Освещение'),
 )
 class RoomLight with RoomLightWbMixin implements IDevice {
-  RoomLight(this.mqtt);
-
-  @override
-  final WbMqttClient mqtt;
-
   @InputControl(
     type: WbControlType.switch_,
     title: WbLocalizedTitle(en: 'Switch'),
@@ -58,7 +53,13 @@ dart run build_runner build
 ```
 
 ```dart
-final device = RoomLight(client);
+final client = WbClient(
+  host: 'localhost',
+  clientId: 'room-light-driver',
+);
+await client.connect();
+
+final device = RoomLight();
 device.init();
 ```
 
@@ -92,4 +93,4 @@ device.init();
 
 Поле `driver` в meta устройства всегда `vktmotage`.
 
-Сгенерированный mixin — `part of` исходного файла, использует геттер `mqtt` из `IDevice`.
+Сгенерированный mixin — `part of` исходного файла, использует `WbClient.getInstanse()`.

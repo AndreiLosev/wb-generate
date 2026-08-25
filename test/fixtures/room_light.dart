@@ -7,10 +7,7 @@ part 'room_light.wb.g.dart';
   title: WbLocalizedTitle(en: 'Room Light', ru: 'Освещение комнаты'),
 )
 class RoomLight with RoomLightWbMixin implements IDevice {
-  RoomLight(this.mqtt);
-
-  @override
-  final WbMqttClient mqtt;
+  RoomLight();
 
   bool executeCalled = false;
 
