@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:wb_annatation/wb_annatation.dart';
 
 import 'fixtures/room_light.dart';
 import 'support/mock_mqtt_client.dart';
@@ -24,7 +25,7 @@ void main() {
         client.publishes,
         contains(
           isA<MockPublish>()
-              .having((p) => p.topic, 'topic', '/devices/room_light/meta')
+              .having((p) => p.topic, 'topic', 'room_light/meta')
               .having((p) => p.retained, 'retained', isTrue)
               .having(
                 (p) => p.payload,
@@ -40,7 +41,7 @@ void main() {
           isA<MockPublish>().having(
             (p) => p.topic,
             'topic',
-            '/devices/room_light/controls/lamp/meta',
+            'room_light/lamp/meta',
           ),
         ),
       );
@@ -56,17 +57,17 @@ void main() {
       expect(
         client.publishes.map((publish) => publish.topic),
         containsAll([
-          '/devices/room_light/controls/lamp',
-          '/devices/room_light/controls/mode',
+          'room_light/lamp/on',
+          'room_light/mode',
         ]),
       );
       expect(
         client.publishes.map((publish) => publish.topic),
-        isNot(contains('/devices/room_light/controls/switch_state')),
+        isNot(contains('room_light/switch_state')),
       );
       expect(
         client.publishes.map((publish) => publish.topic),
-        isNot(contains('/devices/room_light/controls/power')),
+        isNot(contains('room_light/power')),
       );
     });
 
@@ -74,8 +75,8 @@ void main() {
       expect(
         device.inputs(),
         {
-          '/devices/room_light/controls/switch_state',
-          '/devices/room_light/controls/power',
+          'room_light/switch_state',
+          'room_light/power',
         },
       );
     });
@@ -84,40 +85,86 @@ void main() {
       expect(
         device.outputs(),
         {
-          '/devices/room_light/controls/lamp',
-          '/devices/room_light/controls/mode',
+          'room_light/lamp/on',
+          'room_light/mode',
         },
       );
     });
 
-    test('setLamp присваивает значение и публикует в топик', () {
+    test('setLamp публикует в топик и не меняет поле', () {
       device.setLamp(true);
 
-      expect(device.lamp, isTrue);
+      expect(device.lamp, isFalse);
       expect(
         client.publishes,
         contains(
           isA<MockPublish>()
-              .having((p) => p.topic, 'topic', '/devices/room_light/controls/lamp')
+              .having((p) => p.topic, 'topic', 'room_light/lamp/on')
               .having((p) => p.payload, 'payload', '1')
               .having((p) => p.retained, 'retained', isTrue),
         ),
       );
     });
 
-    test('setMode присваивает значение и публикует в топик', () {
+    test('setMode публикует в топик и не меняет поле', () {
       device.setMode('1');
 
-      expect(device.mode, '1');
+      expect(device.mode, '0');
       expect(
         client.publishes,
         contains(
           isA<MockPublish>()
-              .having((p) => p.topic, 'topic', '/devices/room_light/controls/mode')
+              .having((p) => p.topic, 'topic', 'room_light/mode')
               .having((p) => p.payload, 'payload', '1')
               .having((p) => p.retained, 'retained', isTrue),
         ),
       );
+    });
+
+    test('updateField записывает значение в input-поле switch_state', () {
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/switch_state',
+          payload: '1',
+        ),
+      );
+
+      expect(device.switchState, isTrue);
+    });
+
+    test('updateField записывает значение в input-поле power', () {
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/power',
+          payload: '42.5',
+        ),
+      );
+
+      expect(device.power, 42.5);
+    });
+
+    test('updateField записывает значение в output-поле lamp', () {
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/lamp/on',
+          payload: '1',
+        ),
+      );
+
+      expect(device.lamp, isTrue);
+    });
+
+    test('updateField игнорирует неизвестный топик', () {
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/unknown',
+          payload: '1',
+        ),
+      );
+
+      expect(device.switchState, isFalse);
+      expect(device.power, 0);
+      expect(device.lamp, isFalse);
     });
   });
 }

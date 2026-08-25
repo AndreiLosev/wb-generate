@@ -12,7 +12,7 @@ part of 'room_light.dart';
 mixin RoomLightWbMixin {
   static const String deviceName = 'room_light';
 
-  static const String _deviceMetaTopic = '/devices/room_light/meta';
+  static const String _deviceMetaTopic = 'room_light/meta';
 
   static const String _deviceMetaJson =
       '{"driver":"vktmotage","title":{"en":"Room Light","ru":"Освещение комнаты"}}';
@@ -28,22 +28,21 @@ mixin RoomLightWbMixin {
   };
 
   static const Set<String> _inputTopics = {
-    '/devices/room_light/controls/switch_state',
-    '/devices/room_light/controls/power',
+    'room_light/switch_state',
+    'room_light/power',
   };
 
   static const Set<String> _outputTopics = {
-    '/devices/room_light/controls/lamp',
-    '/devices/room_light/controls/mode',
+    'room_light/lamp/on',
+    'room_light/mode',
   };
 
   static const Map<String, String> _outputValueTopics = {
-    'lamp': '/devices/room_light/controls/lamp',
-    'mode': '/devices/room_light/controls/mode',
+    'lamp': 'room_light/lamp/on',
+    'mode': 'room_light/mode',
   };
 
   /// Публикует retained meta устройства, контролов и output values.
-  @override
   void init() {
     (this as RoomLight).mqtt.publish(
       _deviceMetaTopic,
@@ -52,7 +51,7 @@ mixin RoomLightWbMixin {
     );
 
     for (final entry in _controlMetaJson.entries) {
-      final topic = '/devices/room_light/controls/${entry.key}/meta';
+      final topic = 'room_light/${entry.key}/meta';
       (this as RoomLight).mqtt.publish(topic, entry.value, retained: true);
     }
 
@@ -61,9 +60,7 @@ mixin RoomLightWbMixin {
   }
 
   void setLamp(bool value) {
-    final device = this as RoomLight;
-    device.lamp = value;
-    device.mqtt.publish(
+    (this as RoomLight).mqtt.publish(
       _outputValueTopics['lamp']!,
       WbValueCodec.encode(value, WbControlType.switch_),
       retained: true,
@@ -71,9 +68,7 @@ mixin RoomLightWbMixin {
   }
 
   void setMode(String value) {
-    final device = this as RoomLight;
-    device.mode = value;
-    device.mqtt.publish(
+    (this as RoomLight).mqtt.publish(
       _outputValueTopics['mode']!,
       WbValueCodec.encode(value, WbControlType.text),
       retained: true,
@@ -81,8 +76,29 @@ mixin RoomLightWbMixin {
   }
 
   @override
+  void updateField(WbMqttMessage mess) {
+    final device = this as RoomLight;
+    switch (mess.topic) {
+      case 'room_light/switch_state':
+        device.switchState =
+            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+        return;
+      case 'room_light/power':
+        device.power =
+            WbValueCodec.decode(mess.payload, WbControlType.value) as double;
+        return;
+      case 'room_light/lamp/on':
+        device.lamp =
+            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+        return;
+      case 'room_light/mode':
+        device.mode =
+            WbValueCodec.decode(mess.payload, WbControlType.text) as String;
+        return;
+    }
+  }
+
   Set<String> inputs() => _inputTopics;
 
-  @override
   Set<String> outputs() => _outputTopics;
 }

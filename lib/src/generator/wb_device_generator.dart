@@ -10,8 +10,6 @@ import 'package:wb_annatation/wb_annatation.dart';
 import 'meta_builder.dart';
 import 'naming.dart';
 
-const _deviceTopicPrefix = '/devices';
-
 enum _ControlDirection { input, output }
 
 class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
@@ -69,8 +67,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('mixin $mixinName {')
       ..writeln("  static const String deviceName = '$deviceName';")
       ..writeln()
-      ..writeln("  static const String _deviceMetaTopic =")
-      ..writeln("      '$_deviceTopicPrefix/$deviceName/meta';")
+      ..writeln("  static const String _deviceMetaTopic = '$deviceName/meta';")
       ..writeln()
       ..writeln("  static const String _deviceMetaJson =")
       ..writeln("      '${_escapeDartString(deviceMetaJson)}';")
@@ -90,7 +87,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
 
     for (final control in inputControls) {
       buffer.writeln(
-        "    '$_deviceTopicPrefix/$deviceName/controls/${control.mqttName}',",
+        "    '${_shortTopic(deviceName, control.mqttName, usesOnTopic: false)}',",
       );
     }
 
@@ -101,7 +98,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
 
     for (final control in outputControls) {
       buffer.writeln(
-        "    '$_deviceTopicPrefix/$deviceName/controls/${control.mqttName}',",
+        "    '${_shortTopic(deviceName, control.mqttName, usesOnTopic: control.subscriptionUsesOn)}',",
       );
     }
 
@@ -113,7 +110,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     for (final control in outputControls) {
       buffer.writeln(
         "    '${control.mqttName}': "
-        "'$_deviceTopicPrefix/$deviceName/controls/${control.mqttName}',",
+        "'${_shortTopic(deviceName, control.mqttName, usesOnTopic: control.publishUsesOn)}',",
       );
     }
 
@@ -129,10 +126,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       )
       ..writeln()
       ..writeln('    for (final entry in _controlMetaJson.entries) {')
-      ..writeln(
-        "      final topic = "
-        "'$_deviceTopicPrefix/$deviceName/controls/\${entry.key}/meta';",
-      )
+      ..writeln("      final topic = '$deviceName/\${entry.key}/meta';")
       ..writeln(
         '      (this as $className).mqtt.publish(topic, entry.value, retained: true);',
       )
@@ -152,20 +146,58 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       final setterName = toSetterName(control.fieldName);
       buffer
         ..writeln('  void $setterName(${control.dartTypeName} value) {')
-        ..writeln('    final device = this as $className;')
-        ..writeln('    device.${control.fieldName} = value;')
-        ..writeln('    device.mqtt.publish(')
+        ..writeln('    (this as $className).mqtt.publish(')
         ..writeln("      _outputValueTopics['${control.mqttName}']!,")
         ..writeln(
           '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
         )
-        ..writeln('      retained: true,')
+        ..writeln('      retained: ${control.retainedPublish},')
         ..writeln('    );')
         ..writeln('  }')
         ..writeln();
     }
 
     buffer
+      ..writeln('  void updateField(WbMqttMessage mess) {')
+      ..writeln('    final device = this as $className;')
+      ..writeln('    switch (mess.topic) {');
+
+    for (final control in inputControls) {
+      final topic = _shortTopic(
+        deviceName,
+        control.mqttName,
+        usesOnTopic: false,
+      );
+      buffer
+        ..writeln("      case '$topic':")
+        ..writeln(
+          '        device.${control.fieldName} = '
+          'WbValueCodec.decode(mess.payload, WbControlType.${control.typeEnumName}) '
+          'as ${control.dartTypeName};',
+        )
+        ..writeln('        return;');
+    }
+
+    for (final control in outputControls) {
+      final topic = _shortTopic(
+        deviceName,
+        control.mqttName,
+        usesOnTopic: control.subscriptionUsesOn,
+      );
+      buffer
+        ..writeln("      case '$topic':")
+        ..writeln(
+          '        device.${control.fieldName} = '
+          'WbValueCodec.decode(mess.payload, WbControlType.${control.typeEnumName}) '
+          'as ${control.dartTypeName};',
+        )
+        ..writeln('        return;');
+    }
+
+    buffer
+      ..writeln('    }')
+      ..writeln('  }')
+      ..writeln()
       ..writeln('  Set<String> inputs() => _inputTopics;')
       ..writeln()
       ..writeln('  Set<String> outputs() => _outputTopics;')
@@ -224,6 +256,9 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           dartTypeName: dartType.getDisplayString(withNullability: false),
           readonly: readonly,
           isFinal: field.isFinal,
+          subscriptionUsesOn: _subscriptionUsesOn(controlType),
+          publishUsesOn: _publishUsesOn(controlType),
+          retainedPublish: controlType != WbControlType.pushbutton,
           metaJson: MetaBuilder.controlMetaJson(reader, fieldName: field.name),
         ),
       );
@@ -275,6 +310,31 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         .replaceAll("'", r"\'")
         .replaceAll(r'$', r'\$');
   }
+
+  static bool _isBinaryType(WbControlType type) {
+    return switch (type) {
+      WbControlType.switch_ ||
+      WbControlType.woSwitch ||
+      WbControlType.alarm ||
+      WbControlType.pushbutton => true,
+      _ => false,
+    };
+  }
+
+  static bool _subscriptionUsesOn(WbControlType type) {
+    return _isBinaryType(type) && type != WbControlType.woSwitch;
+  }
+
+  static bool _publishUsesOn(WbControlType type) => _isBinaryType(type);
+
+  static String _shortTopic(
+    String deviceName,
+    String mqttName, {
+    required bool usesOnTopic,
+  }) {
+    final base = '$deviceName/$mqttName';
+    return usesOnTopic ? '$base/on' : base;
+  }
 }
 
 class _ControlInfo {
@@ -286,6 +346,9 @@ class _ControlInfo {
     required this.dartTypeName,
     required this.readonly,
     required this.isFinal,
+    required this.subscriptionUsesOn,
+    required this.publishUsesOn,
+    required this.retainedPublish,
     required this.metaJson,
   });
 
@@ -296,5 +359,8 @@ class _ControlInfo {
   final String dartTypeName;
   final bool readonly;
   final bool isFinal;
+  final bool subscriptionUsesOn;
+  final bool publishUsesOn;
+  final bool retainedPublish;
   final String metaJson;
 }

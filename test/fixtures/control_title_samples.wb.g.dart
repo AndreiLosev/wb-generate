@@ -12,7 +12,7 @@ part of 'control_title_samples.dart';
 mixin ControlTitleSamplesWbMixin {
   static const String deviceName = 'title_samples';
 
-  static const String _deviceMetaTopic = '/devices/title_samples/meta';
+  static const String _deviceMetaTopic = 'title_samples/meta';
 
   static const String _deviceMetaJson =
       '{"driver":"vktmotage","title":{"en":"Title Samples"}}';
@@ -24,8 +24,8 @@ mixin ControlTitleSamplesWbMixin {
   };
 
   static const Set<String> _inputTopics = {
-    '/devices/title_samples/controls/wall_switch',
-    '/devices/title_samples/controls/kitchen_switch',
+    'title_samples/wall_switch',
+    'title_samples/kitchen_switch',
   };
 
   static const Set<String> _outputTopics = {};
@@ -33,7 +33,6 @@ mixin ControlTitleSamplesWbMixin {
   static const Map<String, String> _outputValueTopics = {};
 
   /// Публикует retained meta устройства, контролов и output values.
-  @override
   void init() {
     (this as ControlTitleSamples).mqtt.publish(
       _deviceMetaTopic,
@@ -42,7 +41,7 @@ mixin ControlTitleSamplesWbMixin {
     );
 
     for (final entry in _controlMetaJson.entries) {
-      final topic = '/devices/title_samples/controls/${entry.key}/meta';
+      final topic = 'title_samples/${entry.key}/meta';
       (this as ControlTitleSamples).mqtt.publish(
         topic,
         entry.value,
@@ -52,8 +51,21 @@ mixin ControlTitleSamplesWbMixin {
   }
 
   @override
+  void updateField(WbMqttMessage mess) {
+    final device = this as ControlTitleSamples;
+    switch (mess.topic) {
+      case 'title_samples/wall_switch':
+        device.wallSwitch =
+            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+        return;
+      case 'title_samples/kitchen_switch':
+        device.kitchenSwitch =
+            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+        return;
+    }
+  }
+
   Set<String> inputs() => _inputTopics;
 
-  @override
   Set<String> outputs() => _outputTopics;
 }
