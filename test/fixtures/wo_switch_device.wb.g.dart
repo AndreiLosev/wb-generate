@@ -10,36 +10,25 @@
 part of 'wo_switch_device.dart';
 
 mixin WoSwitchDeviceWbMixin {
-  static const String deviceName = 'wo_switch_device';
-
-  static const String _deviceMetaTopic = 'wo_switch_device/meta';
-
-  static const String _deviceMetaJson =
-      '{"driver":"vktmotage","title":{"en":"WO Switch Device"}}';
+  IDevice get _device => this as IDevice;
 
   static const Map<String, String> _controlMetaJson = {
-    'feedback': '{"type":"wo-switch","title":{"en":"feedback"}}',
-    'relay': '{"type":"wo-switch","title":{"en":"relay"}}',
-  };
-
-  static const Set<String> _inputTopics = {'wo_switch_device/feedback'};
-
-  static const Set<String> _outputTopics = {'wo_switch_device/relay'};
-
-  static const Map<String, String> _outputValueTopics = {
-    'relay': 'wo_switch_device/relay/on',
+    'feedback':
+        '{"type":"wo-switch","title":{"en":"feedback"},"order":1,"readonly":false,"hidden":false}',
+    'relay':
+        '{"type":"wo-switch","title":{"en":"relay"},"order":2,"readonly":false,"hidden":false}',
   };
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
     WbClient.getInstanse().publish(
-      _deviceMetaTopic,
-      _deviceMetaJson,
+      '${_device.name}/meta',
+      WbMetaJson.device(_device.title),
       retained: true,
     );
 
     for (final entry in _controlMetaJson.entries) {
-      final topic = 'wo_switch_device/${entry.key}/meta';
+      final topic = '${_device.name}/${entry.key}/meta';
       WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
 
@@ -47,8 +36,10 @@ mixin WoSwitchDeviceWbMixin {
   }
 
   void setRelay(bool value) {
+    final device = this as WoSwitchDevice;
+    device.relay = value;
     WbClient.getInstanse().publish(
-      _outputValueTopics['relay']!,
+      '${_device.name}/relay',
       WbValueCodec.encode(value, WbControlType.woSwitch),
       retained: true,
     );
@@ -56,19 +47,35 @@ mixin WoSwitchDeviceWbMixin {
 
   void updateField(WbMqttMessage mess) {
     final device = this as WoSwitchDevice;
-    switch (mess.topic) {
-      case 'wo_switch_device/feedback':
-        device.feedback =
+    final namePrefix = '${_device.name}/';
+    if (!mess.topic.startsWith(namePrefix)) {
+      return;
+    }
+    switch (mess.topic.substring(namePrefix.length)) {
+      case 'feedback/on':
+        final value =
             WbValueCodec.decode(mess.payload, WbControlType.woSwitch) as bool;
+        device.feedback = value;
+        WbClient.getInstanse().publish(
+          '${_device.name}/feedback',
+          WbValueCodec.encode(value, WbControlType.woSwitch),
+          retained: true,
+        );
         return;
-      case 'wo_switch_device/relay':
-        device.relay =
+      case 'relay/on':
+        final value =
             WbValueCodec.decode(mess.payload, WbControlType.woSwitch) as bool;
+        device.relay = value;
+        WbClient.getInstanse().publish(
+          '${_device.name}/relay',
+          WbValueCodec.encode(value, WbControlType.woSwitch),
+          retained: true,
+        );
         return;
     }
   }
 
-  Set<String> inputs() => _inputTopics;
+  Set<String> inputs() => {'${_device.name}/feedback/on'};
 
-  Set<String> outputs() => _outputTopics;
+  Set<String> outputs() => {'${_device.name}/relay/on'};
 }

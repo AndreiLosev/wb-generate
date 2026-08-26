@@ -46,10 +46,8 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       );
     }
 
-    final deviceName = annotation.read('name').stringValue;
     final className = element.name;
     final mixinName = '${className}WbMixin';
-    final deviceMetaJson = MetaBuilder.deviceMetaJson(annotation);
     final importPath = p.basename(buildStep.inputId.path);
 
     final inputControls = controls
@@ -65,12 +63,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln("part of '$importPath';")
       ..writeln()
       ..writeln('mixin $mixinName {')
-      ..writeln("  static const String deviceName = '$deviceName';")
-      ..writeln()
-      ..writeln("  static const String _deviceMetaTopic = '$deviceName/meta';")
-      ..writeln()
-      ..writeln("  static const String _deviceMetaJson =")
-      ..writeln("      '${_escapeDartString(deviceMetaJson)}';")
+      ..writeln('  IDevice get _device => this as IDevice;')
       ..writeln()
       ..writeln('  static const Map<String, String> _controlMetaJson = {');
 
@@ -83,50 +76,16 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     buffer
       ..writeln('  };')
       ..writeln()
-      ..writeln('  static const Set<String> _inputTopics = {');
-
-    for (final control in inputControls) {
-      buffer.writeln(
-        "    '${_shortTopic(deviceName, control.mqttName, usesOnTopic: false)}',",
-      );
-    }
-
-    buffer
-      ..writeln('  };')
-      ..writeln()
-      ..writeln('  static const Set<String> _outputTopics = {');
-
-    for (final control in outputControls) {
-      buffer.writeln(
-        "    '${_shortTopic(deviceName, control.mqttName, usesOnTopic: control.subscriptionUsesOn)}',",
-      );
-    }
-
-    buffer
-      ..writeln('  };')
-      ..writeln()
-      ..writeln('  static const Map<String, String> _outputValueTopics = {');
-
-    for (final control in outputControls) {
-      buffer.writeln(
-        "    '${control.mqttName}': "
-        "'${_shortTopic(deviceName, control.mqttName, usesOnTopic: control.publishUsesOn)}',",
-      );
-    }
-
-    buffer
-      ..writeln('  };')
-      ..writeln()
       ..writeln(
         '  /// Публикует retained meta устройства, контролов и output values.',
       )
       ..writeln('  void init() {')
       ..writeln(
-        '    WbClient.getInstanse().publish(_deviceMetaTopic, _deviceMetaJson, retained: true);',
+        "    WbClient.getInstanse().publish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
       )
       ..writeln()
       ..writeln('    for (final entry in _controlMetaJson.entries) {')
-      ..writeln("      final topic = '$deviceName/\${entry.key}/meta';")
+      ..writeln("      final topic = '\${_device.name}/\${entry.key}/meta';")
       ..writeln(
         '      WbClient.getInstanse().publish(topic, entry.value, retained: true);',
       )
@@ -146,51 +105,63 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       final setterName = toSetterName(control.fieldName);
       buffer
         ..writeln('  void $setterName(${control.dartTypeName} value) {')
-        ..writeln('    WbClient.getInstanse().publish(')
-        ..writeln("      _outputValueTopics['${control.mqttName}']!,")
-        ..writeln(
-          '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
-        )
-        ..writeln('      retained: ${control.retainedPublish},')
-        ..writeln('    );')
-        ..writeln('  }')
-        ..writeln();
+        ..writeln('    final device = this as $className;');
+      if (control.hasAnyNormalization) {
+        buffer.writeln('    var normalized = value;');
+        _writeValueNormalization(buffer, control, '    ', 'normalized');
+        buffer
+          ..writeln('    device.${control.fieldName} = normalized;')
+          ..writeln('    WbClient.getInstanse().publish(')
+          ..writeln("      '\${_device.name}/${control.mqttName}',")
+          ..writeln(
+            '      WbValueCodec.encode(normalized, WbControlType.${control.typeEnumName}),',
+          )
+          ..writeln('      retained: ${control.retainedPublish},')
+          ..writeln('    );')
+          ..writeln('  }')
+          ..writeln();
+      } else {
+        buffer
+          ..writeln('    device.${control.fieldName} = value;')
+          ..writeln('    WbClient.getInstanse().publish(')
+          ..writeln("      '\${_device.name}/${control.mqttName}',")
+          ..writeln(
+            '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
+          )
+          ..writeln('      retained: ${control.retainedPublish},')
+          ..writeln('    );')
+          ..writeln('  }')
+          ..writeln();
+      }
     }
 
     buffer
       ..writeln('  void updateField(WbMqttMessage mess) {')
       ..writeln('    final device = this as $className;')
-      ..writeln('    switch (mess.topic) {');
+      ..writeln("    final namePrefix = '\${_device.name}/';")
+      ..writeln('    if (!mess.topic.startsWith(namePrefix)) {')
+      ..writeln('      return;')
+      ..writeln('    }')
+      ..writeln('    switch (mess.topic.substring(namePrefix.length)) {');
 
-    for (final control in inputControls) {
-      final topic = _shortTopic(
-        deviceName,
-        control.mqttName,
-        usesOnTopic: false,
+    for (final control in controls) {
+      final valueKeyword = control.needsMutableValue ? 'var' : 'final';
+      buffer.writeln("      case '${control.mqttName}/on':");
+      buffer.writeln(
+        '        $valueKeyword value = '
+        'WbValueCodec.decode(mess.payload, WbControlType.${control.typeEnumName}) '
+        'as ${control.dartTypeName};',
       );
+      _writeValueNormalization(buffer, control, '        ', 'value');
       buffer
-        ..writeln("      case '$topic':")
+        ..writeln('        device.${control.fieldName} = value;')
+        ..writeln('        WbClient.getInstanse().publish(')
+        ..writeln("          '\${_device.name}/${control.mqttName}',")
         ..writeln(
-          '        device.${control.fieldName} = '
-          'WbValueCodec.decode(mess.payload, WbControlType.${control.typeEnumName}) '
-          'as ${control.dartTypeName};',
+          '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
         )
-        ..writeln('        return;');
-    }
-
-    for (final control in outputControls) {
-      final topic = _shortTopic(
-        deviceName,
-        control.mqttName,
-        usesOnTopic: control.subscriptionUsesOn,
-      );
-      buffer
-        ..writeln("      case '$topic':")
-        ..writeln(
-          '        device.${control.fieldName} = '
-          'WbValueCodec.decode(mess.payload, WbControlType.${control.typeEnumName}) '
-          'as ${control.dartTypeName};',
-        )
+        ..writeln('          retained: ${control.retainedPublish},')
+        ..writeln('        );')
         ..writeln('        return;');
     }
 
@@ -198,16 +169,30 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('    }')
       ..writeln('  }')
       ..writeln()
-      ..writeln('  Set<String> inputs() => _inputTopics;')
+      ..writeln('  Set<String> inputs() => {');
+
+    for (final control in inputControls) {
+      buffer.writeln("    '\${_device.name}/${control.mqttName}/on',");
+    }
+
+    buffer
+      ..writeln('  };')
       ..writeln()
-      ..writeln('  Set<String> outputs() => _outputTopics;')
-      ..writeln('}');
+      ..writeln('  Set<String> outputs() => {');
+
+    for (final control in outputControls) {
+      buffer.writeln("    '\${_device.name}/${control.mqttName}/on',");
+    }
+
+    buffer.writeln('  };');
+    buffer.writeln('}');
 
     return buffer.toString();
   }
 
   List<_ControlInfo> _readControls(ClassElement classElement) {
     final controls = <_ControlInfo>[];
+    var order = 0;
 
     for (final field in classElement.fields) {
       if (field.isStatic || field.isSynthetic) {
@@ -226,6 +211,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         continue;
       }
 
+      order++;
       final reader = ConstantReader(annotation);
       final type = reader.read('type');
       final mqttType = type.peek('mqttValue')!.stringValue;
@@ -238,7 +224,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
 
       final mqttName =
           reader.peek('name')?.stringValue ?? toSnakeCase(field.name);
-      final readonly = reader.read('readonly').boolValue;
 
       if (field.isFinal) {
         throw InvalidGenerationSourceError(
@@ -254,12 +239,16 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           mqttName: mqttName,
           typeEnumName: typeEnumName,
           dartTypeName: dartType.getDisplayString(withNullability: false),
-          readonly: readonly,
-          isFinal: field.isFinal,
-          subscriptionUsesOn: _subscriptionUsesOn(controlType),
-          publishUsesOn: _publishUsesOn(controlType),
           retainedPublish: controlType != WbControlType.pushbutton,
-          metaJson: MetaBuilder.controlMetaJson(reader, fieldName: field.name),
+          min: reader.peek('min')?.doubleValue,
+          max: reader.peek('max')?.doubleValue,
+          precision: reader.peek('precision')?.doubleValue,
+          enumAllowedKeys: _readEnumAllowedKeys(reader),
+          metaJson: MetaBuilder.controlMetaJson(
+            reader,
+            fieldName: field.name,
+            order: order,
+          ),
         ),
       );
     }
@@ -311,29 +300,52 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         .replaceAll(r'$', r'\$');
   }
 
-  static bool _isBinaryType(WbControlType type) {
-    return switch (type) {
-      WbControlType.switch_ ||
-      WbControlType.woSwitch ||
-      WbControlType.alarm ||
-      WbControlType.pushbutton => true,
-      _ => false,
-    };
+  List<String>? _readEnumAllowedKeys(ConstantReader reader) {
+    final enumTitles = reader.peek('enumTitles');
+    if (enumTitles == null || enumTitles.isNull) {
+      return null;
+    }
+
+    return enumTitles.mapValue.keys
+        .map((key) => key!.toStringValue()!)
+        .toList();
   }
 
-  static bool _subscriptionUsesOn(WbControlType type) {
-    return _isBinaryType(type) && type != WbControlType.woSwitch;
-  }
+  void _writeValueNormalization(
+    StringBuffer buffer,
+    _ControlInfo control,
+    String indent,
+    String valueVar,
+  ) {
+    if (control.enumAllowedKeys != null) {
+      final keys = control.enumAllowedKeys!
+          .map((key) => "'${_escapeDartString(key)}'")
+          .join(', ');
+      buffer.writeln(
+        '$indent if (!const {$keys}.contains($valueVar)) return;',
+      );
+    }
 
-  static bool _publishUsesOn(WbControlType type) => _isBinaryType(type);
+    if (!control.hasNumericNormalization) {
+      return;
+    }
 
-  static String _shortTopic(
-    String deviceName,
-    String mqttName, {
-    required bool usesOnTopic,
-  }) {
-    final base = '$deviceName/$mqttName';
-    return usesOnTopic ? '$base/on' : base;
+    final method =
+        control.dartTypeName == 'int' ? 'normalizeInt' : 'normalizeDouble';
+    final params = <String>[];
+    if (control.min != null) {
+      params.add('min: ${control.min}');
+    }
+    if (control.max != null) {
+      params.add('max: ${control.max}');
+    }
+    if (control.precision != null) {
+      params.add('precision: ${control.precision}');
+    }
+
+    buffer.writeln(
+      '$indent $valueVar = WbNumericBounds.$method($valueVar, ${params.join(', ')});',
+    );
   }
 }
 
@@ -344,11 +356,11 @@ class _ControlInfo {
     required this.mqttName,
     required this.typeEnumName,
     required this.dartTypeName,
-    required this.readonly,
-    required this.isFinal,
-    required this.subscriptionUsesOn,
-    required this.publishUsesOn,
     required this.retainedPublish,
+    this.min,
+    this.max,
+    this.precision,
+    this.enumAllowedKeys,
     required this.metaJson,
   });
 
@@ -357,10 +369,23 @@ class _ControlInfo {
   final String mqttName;
   final String typeEnumName;
   final String dartTypeName;
-  final bool readonly;
-  final bool isFinal;
-  final bool subscriptionUsesOn;
-  final bool publishUsesOn;
   final bool retainedPublish;
+  final double? min;
+  final double? max;
+  final double? precision;
+  final List<String>? enumAllowedKeys;
   final String metaJson;
+
+  bool get hasNumericNormalization {
+    if (dartTypeName != 'int' && dartTypeName != 'double') {
+      return false;
+    }
+
+    return min != null || max != null || precision != null;
+  }
+
+  bool get hasAnyNormalization =>
+      enumAllowedKeys != null || hasNumericNormalization;
+
+  bool get needsMutableValue => hasNumericNormalization;
 }

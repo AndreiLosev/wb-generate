@@ -2,12 +2,18 @@ import 'package:wb_annatation/wb_annatation.dart';
 
 part 'control_title_samples.wb.g.dart';
 
-@VirtualDevice(
-  name: 'title_samples',
-  title: WbLocalizedTitle(en: 'Title Samples'),
-)
+@VirtualDevice()
 class ControlTitleSamples with ControlTitleSamplesWbMixin implements IDevice {
-  ControlTitleSamples();
+  ControlTitleSamples({
+    this.name = 'title_samples',
+    this.title = const WbLocalizedTitle(en: 'Title Samples'),
+  });
+
+  @override
+  final String name;
+
+  @override
+  final WbLocalizedTitle? title;
 
   @InputControl(type: WbControlType.switch_)
   bool wallSwitch = false;

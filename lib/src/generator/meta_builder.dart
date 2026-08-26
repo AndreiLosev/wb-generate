@@ -4,24 +4,19 @@ import 'package:source_gen/source_gen.dart';
 
 import 'naming.dart';
 
-/// Собирает JSON-метаданные устройства и контролов Wiren Board.
+/// Собирает JSON-метаданные контролов Wiren Board.
 class MetaBuilder {
-  static String deviceMetaJson(ConstantReader annotation) {
-    final title = _localizedTitleMap(annotation.read('title'));
-
-    return jsonEncode({
-      'driver': 'vktmotage',
-      'title': title,
-    });
-  }
-
   static String controlMetaJson(
     ConstantReader annotation, {
     required String fieldName,
+    required int order,
   }) {
     final meta = <String, dynamic>{
       'type': annotation.read('type').peek('mqttValue')!.stringValue,
       'title': _controlTitleMap(annotation, fieldName),
+      'order': order,
+      'readonly': annotation.read('readonly').boolValue,
+      'hidden': annotation.read('hidden').boolValue,
     };
 
     final units = annotation.peek('units')?.stringValue;
@@ -42,19 +37,6 @@ class MetaBuilder {
     final precision = annotation.peek('precision')?.doubleValue;
     if (precision != null) {
       meta['precision'] = precision;
-    }
-
-    final order = annotation.peek('order')?.intValue;
-    if (order != null) {
-      meta['order'] = order;
-    }
-
-    if (annotation.read('readonly').boolValue) {
-      meta['readonly'] = true;
-    }
-
-    if (annotation.read('hidden').boolValue) {
-      meta['hidden'] = true;
     }
 
     final enumTitles = annotation.peek('enumTitles');
@@ -85,19 +67,6 @@ class MetaBuilder {
     return result;
   }
 
-  static Map<String, String> _localizedTitleMap(ConstantReader title) {
-    final result = <String, String>{};
-    final en = title.peek('en')?.stringValue;
-    final ru = title.peek('ru')?.stringValue;
-    if (en != null) {
-      result['en'] = en;
-    }
-    if (ru != null) {
-      result['ru'] = ru;
-    }
-    return result;
-  }
-
   static Map<String, Map<String, String>> _enumTitlesMap(
     ConstantReader enumTitles,
   ) {
@@ -106,9 +75,13 @@ class MetaBuilder {
       final keyString = key!.toStringValue()!;
       final valueReader = ConstantReader(enumTitles.mapValue[key]!);
       final localized = <String, String>{};
-      for (final locale in valueReader.mapValue.keys) {
-        localized[locale!.toStringValue()!] =
-            valueReader.mapValue[locale]!.toStringValue()!;
+      final en = valueReader.peek('en')?.stringValue;
+      final ru = valueReader.peek('ru')?.stringValue;
+      if (en != null) {
+        localized['en'] = en;
+      }
+      if (ru != null) {
+        localized['ru'] = ru;
       }
       result[keyString] = localized;
     }

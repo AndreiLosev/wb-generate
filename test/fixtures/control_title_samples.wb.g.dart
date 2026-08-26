@@ -10,57 +10,63 @@
 part of 'control_title_samples.dart';
 
 mixin ControlTitleSamplesWbMixin {
-  static const String deviceName = 'title_samples';
-
-  static const String _deviceMetaTopic = 'title_samples/meta';
-
-  static const String _deviceMetaJson =
-      '{"driver":"vktmotage","title":{"en":"Title Samples"}}';
+  IDevice get _device => this as IDevice;
 
   static const Map<String, String> _controlMetaJson = {
-    'wall_switch': '{"type":"switch","title":{"en":"wall_switch"}}',
+    'wall_switch':
+        '{"type":"switch","title":{"en":"wall_switch"},"order":1,"readonly":false,"hidden":false}',
     'kitchen_switch':
-        '{"type":"switch","title":{"en":"kitchen_switch","ru":"Выключатель"}}',
+        '{"type":"switch","title":{"en":"kitchen_switch","ru":"Выключатель"},"order":2,"readonly":false,"hidden":false}',
   };
-
-  static const Set<String> _inputTopics = {
-    'title_samples/wall_switch',
-    'title_samples/kitchen_switch',
-  };
-
-  static const Set<String> _outputTopics = {};
-
-  static const Map<String, String> _outputValueTopics = {};
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
     WbClient.getInstanse().publish(
-      _deviceMetaTopic,
-      _deviceMetaJson,
+      '${_device.name}/meta',
+      WbMetaJson.device(_device.title),
       retained: true,
     );
 
     for (final entry in _controlMetaJson.entries) {
-      final topic = 'title_samples/${entry.key}/meta';
+      final topic = '${_device.name}/${entry.key}/meta';
       WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
   }
 
   void updateField(WbMqttMessage mess) {
     final device = this as ControlTitleSamples;
-    switch (mess.topic) {
-      case 'title_samples/wall_switch':
-        device.wallSwitch =
+    final namePrefix = '${_device.name}/';
+    if (!mess.topic.startsWith(namePrefix)) {
+      return;
+    }
+    switch (mess.topic.substring(namePrefix.length)) {
+      case 'wall_switch/on':
+        final value =
             WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+        device.wallSwitch = value;
+        WbClient.getInstanse().publish(
+          '${_device.name}/wall_switch',
+          WbValueCodec.encode(value, WbControlType.switch_),
+          retained: true,
+        );
         return;
-      case 'title_samples/kitchen_switch':
-        device.kitchenSwitch =
+      case 'kitchen_switch/on':
+        final value =
             WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+        device.kitchenSwitch = value;
+        WbClient.getInstanse().publish(
+          '${_device.name}/kitchen_switch',
+          WbValueCodec.encode(value, WbControlType.switch_),
+          retained: true,
+        );
         return;
     }
   }
 
-  Set<String> inputs() => _inputTopics;
+  Set<String> inputs() => {
+    '${_device.name}/wall_switch/on',
+    '${_device.name}/kitchen_switch/on',
+  };
 
-  Set<String> outputs() => _outputTopics;
+  Set<String> outputs() => {};
 }

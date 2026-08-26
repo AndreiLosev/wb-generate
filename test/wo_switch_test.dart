@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:wb_annatation/wb_annatation.dart';
 
 import 'fixtures/wo_switch_device.dart';
 import 'support/mock_mqtt_client.dart';
@@ -24,24 +25,24 @@ void main() {
       device = WoSwitchDevice();
     });
 
-    test('inputs для wo-switch возвращает базовый топик', () {
+    test('inputs для wo-switch возвращает /on топик', () {
       expect(
         device.inputs(),
-        {'wo_switch_device/feedback'},
+        {'wo_switch_device/feedback/on'},
       );
     });
 
-    test('outputs для wo-switch возвращает базовый топик', () {
+    test('outputs для wo-switch возвращает /on топик', () {
       expect(
         device.outputs(),
-        {'wo_switch_device/relay'},
+        {'wo_switch_device/relay/on'},
       );
     });
 
-    test('setRelay публикует в /on и не меняет поле', () {
+    test('setRelay публикует в основной топик и меняет поле', () {
       device.setRelay(true);
 
-      expect(device.relay, isFalse);
+      expect(device.relay, isTrue);
       expect(
         client.publishes,
         contains(
@@ -49,8 +50,28 @@ void main() {
               .having(
                 (p) => p.topic,
                 'topic',
-                'wo_switch_device/relay/on',
+                'wo_switch_device/relay',
               )
+              .having((p) => p.payload, 'payload', '1')
+              .having((p) => p.retained, 'retained', isTrue),
+        ),
+      );
+    });
+
+    test('updateField публикует в основной топик feedback', () {
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'wo_switch_device/feedback/on',
+          payload: '1',
+        ),
+      );
+
+      expect(device.feedback, isTrue);
+      expect(
+        client.publishes,
+        contains(
+          isA<MockPublish>()
+              .having((p) => p.topic, 'topic', 'wo_switch_device/feedback')
               .having((p) => p.payload, 'payload', '1')
               .having((p) => p.retained, 'retained', isTrue),
         ),

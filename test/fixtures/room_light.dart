@@ -2,12 +2,21 @@ import 'package:wb_annatation/wb_annatation.dart';
 
 part 'room_light.wb.g.dart';
 
-@VirtualDevice(
-  name: 'room_light',
-  title: WbLocalizedTitle(en: 'Room Light', ru: 'Освещение комнаты'),
-)
+@VirtualDevice()
 class RoomLight with RoomLightWbMixin implements IDevice {
-  RoomLight();
+  RoomLight({
+    this.name = 'room_light',
+    this.title = const WbLocalizedTitle(
+      en: 'Room Light',
+      ru: 'Освещение комнаты',
+    ),
+  });
+
+  @override
+  final String name;
+
+  @override
+  final WbLocalizedTitle? title;
 
   bool executeCalled = false;
 
@@ -20,7 +29,6 @@ class RoomLight with RoomLightWbMixin implements IDevice {
   @OutputControl(
     type: WbControlType.switch_,
     title: WbLocalizedTitle(en: 'Lamp', ru: 'Лампа'),
-    order: 1,
   )
   bool lamp = false;
 
@@ -38,8 +46,8 @@ class RoomLight with RoomLightWbMixin implements IDevice {
   @OutputControl(
     type: WbControlType.text,
     enumTitles: {
-      '0': {'en': 'Off', 'ru': 'Выкл'},
-      '1': {'en': 'On', 'ru': 'Вкл'},
+      '0': WbLocalizedTitle(en: 'Off', ru: 'Выкл'),
+      '1': WbLocalizedTitle(en: 'On', ru: 'Вкл'),
     },
     title: WbLocalizedTitle(en: 'Mode', ru: 'Режим'),
   )

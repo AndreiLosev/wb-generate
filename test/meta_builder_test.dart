@@ -8,24 +8,13 @@ import 'support/analysis.dart';
 
 void main() {
   group('MetaBuilder', () {
-    test('собирает meta устройства', () async {
-      final clazz = await resolveFixtureClass('RoomLight');
-      final annotation = const TypeChecker.fromRuntime(
-        VirtualDevice,
-      ).firstAnnotationOfExact(clazz)!;
-
-      final json = MetaBuilder.deviceMetaJson(ConstantReader(annotation));
-      expect(
-        json,
-        '{"driver":"vktmotage","title":{"en":"Room Light","ru":"Освещение комнаты"}}',
-      );
-    });
-
     test('собирает meta контрола с опциональными полями', () async {
       final json = await _controlMetaJson('lamp');
       expect(json, contains('"type":"switch"'));
-      expect(json, contains('"order":1'));
+      expect(json, contains('"order":2'));
       expect(json, contains('"title":{"en":"Lamp","ru":"Лампа"}'));
+      expect(json, contains('"readonly":false'));
+      expect(json, contains('"hidden":false'));
     });
 
     test('включает readonly, hidden, enum и units', () async {
@@ -33,7 +22,7 @@ void main() {
       expect(json, contains('"type":"value"'));
       expect(json, contains('"units":"W"'));
       expect(json, contains('"readonly":true'));
-      expect(json, isNot(contains('"hidden":true')));
+      expect(json, contains('"hidden":false'));
       expect(json, isNot(contains('"enum"')));
     });
 
@@ -49,6 +38,7 @@ void main() {
       );
 
       expect(json, contains('"title":{"en":"wall_switch"}'));
+      expect(json, contains('"order":1'));
     });
 
     test('использует snake_case поля как en, если title.en не задан', () async {
@@ -61,6 +51,7 @@ void main() {
         json,
         contains('"title":{"en":"kitchen_switch","ru":"Выключатель"}'),
       );
+      expect(json, contains('"order":2'));
     });
   });
 }
@@ -72,16 +63,50 @@ Future<String> _controlMetaJsonFromFixture(
   final clazz = await resolveFixtureClass(className);
   final field = clazz.getField(fieldName)!;
   final reader = _controlReader(field);
+  final order = _controlOrder(clazz, fieldName);
 
-  return MetaBuilder.controlMetaJson(reader, fieldName: field.name);
+  return MetaBuilder.controlMetaJson(
+    reader,
+    fieldName: field.name,
+    order: order,
+  );
 }
 
 Future<String> _controlMetaJson(String fieldName) async {
   final clazz = await resolveFixtureClass('RoomLight');
   final field = clazz.getField(fieldName)!;
   final reader = _controlReader(field);
+  final order = _controlOrder(clazz, fieldName);
 
-  return MetaBuilder.controlMetaJson(reader, fieldName: field.name);
+  return MetaBuilder.controlMetaJson(
+    reader,
+    fieldName: field.name,
+    order: order,
+  );
+}
+
+int _controlOrder(ClassElement clazz, String fieldName) {
+  var order = 0;
+  for (final field in clazz.fields) {
+    if (field.isStatic || field.isSynthetic) {
+      continue;
+    }
+    if (!_hasControlAnnotation(field)) {
+      continue;
+    }
+    order++;
+    if (field.name == fieldName) {
+      return order;
+    }
+  }
+  throw StateError('Control field $fieldName not found.');
+}
+
+bool _hasControlAnnotation(FieldElement field) {
+  const inputChecker = TypeChecker.fromRuntime(InputControl);
+  const outputChecker = TypeChecker.fromRuntime(OutputControl);
+  return inputChecker.hasAnnotationOfExact(field) ||
+      outputChecker.hasAnnotationOfExact(field);
 }
 
 ConstantReader _controlReader(FieldElement field) {

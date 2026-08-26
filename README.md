@@ -24,11 +24,19 @@ import 'package:wb_annatation/wb_annatation.dart';
 
 part 'room_light.wb.g.dart';
 
-@VirtualDevice(
-  name: 'room_light',
-  title: WbLocalizedTitle(en: 'Room Light', ru: 'Освещение'),
-)
+@VirtualDevice()
 class RoomLight with RoomLightWbMixin implements IDevice {
+  RoomLight({
+    required this.name,
+    this.title,
+  });
+
+  @override
+  final String name;
+
+  @override
+  final WbLocalizedTitle? title;
+
   @InputControl(
     type: WbControlType.switch_,
     title: WbLocalizedTitle(en: 'Switch'),
@@ -59,7 +67,7 @@ final client = WbClient(
 );
 await client.connect();
 
-final device = RoomLight();
+final device = RoomLight(name: 'room_light');
 device.init();
 ```
 
@@ -68,29 +76,32 @@ device.init();
 | Метод | Поведение |
 |---|---|
 | `init()` | retained-публикация meta устройства, meta всех контролов и текущих значений `@OutputControl` через `set<Field>` |
-| `inputs()` | топики подписки `@InputControl` (см. таблицу топиков ниже) |
-| `outputs()` | топики подписки `@OutputControl` (см. таблицу топиков ниже) |
-| `setLamp(value)` | только MQTT publish в output-топик; поле **не меняется** |
-| `updateField(mess)` | по `mess.topic` находит `@InputControl` или `@OutputControl`, декодирует `mess.payload` и записывает в поле |
+| `inputs()` | топики подписки `@InputControl`: `{device}/{control}/on` |
+| `outputs()` | топики подписки `@OutputControl`: `{device}/{control}/on` |
+| `setLamp(value)` | записывает значение в поле и MQTT publish в основной топик `{device}/{control}` |
+| `updateField(mess)` | по `mess.topic` (`.../on`) находит контрол, декодирует `mess.payload`, нормализует значение, записывает в поле и публикует в основной топик `{device}/{control}` |
+
+### Нормализация значений
+
+В `updateField` и `set{Field}` генератор применяет:
+
+- **min / max** — ограничение числового значения границами (если указаны в аннотации)
+- **precision** — округление до шага `(value / precision).round() * precision`
+- **enumTitles** — только значения из ключей map; недопустимые значения игнорируются без assign/publish
 
 Генератор использует **короткие топики** `{device}/{control}` (с опциональным `/on` или `/meta`). Преобразование в полные пути Wiren Board (`/devices/...`) — задача реализации `WbMqttClient`.
 
-### Топики по типу контрола
+### Топики
 
 | Назначение | Короткий топик |
 |---|---|
 | meta устройства | `{device}/meta` |
 | meta контрола | `{device}/{control}/meta` |
-
-| Направление | Тип | топик подписки | `set<Field>` |
-|---|---|---|---|
-| `@InputControl` | любой | `{device}/{control}` | — |
-| `@OutputControl` | `wo-switch` | `{device}/{control}` | `{device}/{control}/on` |
-| `@OutputControl` | `switch`, `alarm`, `pushbutton` | `{device}/{control}/on` | `{device}/{control}/on` |
-| `@OutputControl` | остальные (`text`, `range`, `value`, …) | `{device}/{control}` | `{device}/{control}` |
+| подписка `@InputControl` / `@OutputControl` | `{device}/{control}/on` |
+| `set<Field>` (publish) | `{device}/{control}` |
 
 Для `pushbutton` publish выполняется без `retained`.
 
-Поле `driver` в meta устройства всегда `vktmotage`.
+Поле `driver` в meta устройства всегда `vktmotage`. Поле `order` в meta контрола генерируется автоматически (1, 2, 3, …) по порядку полей в классе. Поля `readonly` и `hidden` всегда присутствуют в meta контрола.
 
 Сгенерированный mixin — `part of` исходного файла, использует `WbClient.getInstanse()`.

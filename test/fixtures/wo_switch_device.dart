@@ -2,12 +2,18 @@ import 'package:wb_annatation/wb_annatation.dart';
 
 part 'wo_switch_device.wb.g.dart';
 
-@VirtualDevice(
-  name: 'wo_switch_device',
-  title: WbLocalizedTitle(en: 'WO Switch Device'),
-)
+@VirtualDevice()
 class WoSwitchDevice with WoSwitchDeviceWbMixin implements IDevice {
-  WoSwitchDevice();
+  WoSwitchDevice({
+    this.name = 'wo_switch_device',
+    this.title = const WbLocalizedTitle(en: 'WO Switch Device'),
+  });
+
+  @override
+  final String name;
+
+  @override
+  final WbLocalizedTitle? title;
 
   @InputControl(type: WbControlType.woSwitch)
   bool feedback = false;
