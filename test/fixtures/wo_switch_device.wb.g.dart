@@ -21,6 +21,7 @@ mixin WoSwitchDeviceWbMixin {
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
+    final device = this as WoSwitchDevice;
     WbClient.getInstanse().publish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
@@ -32,7 +33,7 @@ mixin WoSwitchDeviceWbMixin {
       WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
 
-    setRelay((this as WoSwitchDevice).relay);
+    setRelay(device.relay);
   }
 
   void setRelay(bool value) {

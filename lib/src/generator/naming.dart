@@ -19,3 +19,23 @@ String toSnakeCase(String input) {
 /// Имя setter-метода для output-поля: `lamp` → `setLamp`.
 String toSetterName(String fieldName) =>
     'set${fieldName[0].toUpperCase()}${fieldName.substring(1)}';
+
+/// Преобразует snake_case (YAML) в camelCase (Dart): `client_id` → `clientId`.
+String toCamelCase(String snakeCase) {
+  final parts = snakeCase.split('_');
+  if (parts.isEmpty) {
+    return snakeCase;
+  }
+
+  final buffer = StringBuffer(parts.first);
+  for (final part in parts.skip(1)) {
+    if (part.isEmpty) {
+      continue;
+    }
+    buffer.write(part[0].toUpperCase());
+    if (part.length > 1) {
+      buffer.write(part.substring(1));
+    }
+  }
+  return buffer.toString();
+}

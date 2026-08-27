@@ -15,6 +15,7 @@ enum _ControlDirection { input, output }
 class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
   static const _inputChecker = TypeChecker.fromRuntime(InputControl);
   static const _outputChecker = TypeChecker.fromRuntime(OutputControl);
+  static const _retainChecker = TypeChecker.fromRuntime(Retain);
   static const _iDeviceChecker = TypeChecker.fromRuntime(IDevice);
 
   @override
@@ -38,6 +39,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     }
 
     final controls = _readControls(element);
+    _validateRetainFields(element);
     if (controls.isEmpty) {
       throw InvalidGenerationSourceError(
         '@VirtualDevice class must have at least one '
@@ -80,6 +82,35 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         '  /// Публикует retained meta устройства, контролов и output values.',
       )
       ..writeln('  void init() {')
+      ..writeln('    final device = this as $className;');
+
+    final retainedControls = controls.where((c) => c.retain).toList();
+    for (final control in retainedControls) {
+      buffer
+        ..writeln(
+          '    device.${control.fieldName} = WbHiveStorage.getInstanse().get(',
+        )
+        ..writeln("      '\${_device.name}.${control.fieldName}',")
+        ..writeln('      ${control.retainInitLiteral},')
+        ..writeln('    ) as ${control.dartTypeName};');
+    }
+
+    if (retainedControls.isNotEmpty) {
+      buffer.writeln();
+      for (final control in retainedControls) {
+        buffer
+          ..writeln('    WbClient.getInstanse().publish(')
+          ..writeln("      '\${_device.name}/${control.mqttName}',")
+          ..writeln(
+            '      WbValueCodec.encode(device.${control.fieldName}, WbControlType.${control.typeEnumName}),',
+          )
+          ..writeln('      retained: ${control.retainedPublish},')
+          ..writeln('    );');
+      }
+      buffer.writeln();
+    }
+
+    buffer
       ..writeln(
         "    WbClient.getInstanse().publish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
       )
@@ -93,8 +124,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln();
 
     for (final control in outputControls) {
+      if (control.retain) {
+        continue;
+      }
       buffer.writeln(
-        '    ${toSetterName(control.fieldName)}((this as $className).${control.fieldName});',
+        '    ${toSetterName(control.fieldName)}(device.${control.fieldName});',
       );
     }
 
@@ -161,8 +195,15 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
         )
         ..writeln('          retained: ${control.retainedPublish},')
-        ..writeln('        );')
-        ..writeln('        return;');
+        ..writeln('        );');
+      if (control.retain) {
+        buffer
+          ..writeln('        WbHiveStorage.getInstanse().put(')
+          ..writeln("          '\${_device.name}.${control.fieldName}',")
+          ..writeln('          value,')
+          ..writeln('        );');
+      }
+      buffer.writeln('        return;');
     }
 
     buffer
@@ -232,6 +273,16 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         );
       }
 
+      final retainAnnotation = _retainChecker.firstAnnotationOfExact(field);
+      final retain = retainAnnotation != null;
+      final retainInitLiteral = retain
+          ? _retainInitLiteral(
+              ConstantReader(retainAnnotation),
+              dartType.getDisplayString(withNullability: false),
+              field,
+            )
+          : null;
+
       controls.add(
         _ControlInfo(
           direction: direction,
@@ -240,6 +291,8 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           typeEnumName: typeEnumName,
           dartTypeName: dartType.getDisplayString(withNullability: false),
           retainedPublish: controlType != WbControlType.pushbutton,
+          retain: retain,
+          retainInitLiteral: retainInitLiteral,
           min: reader.peek('min')?.doubleValue,
           max: reader.peek('max')?.doubleValue,
           precision: reader.peek('precision')?.doubleValue,
@@ -254,6 +307,71 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     }
 
     return controls;
+  }
+
+  void _validateRetainFields(ClassElement classElement) {
+    for (final field in classElement.fields) {
+      if (field.isStatic || field.isSynthetic) {
+        continue;
+      }
+
+      if (_retainChecker.hasAnnotationOfExact(field) &&
+          _controlDirection(field) == null) {
+        throw InvalidGenerationSourceError(
+          '@Retain can only be applied to @InputControl or @OutputControl fields.',
+          element: field,
+        );
+      }
+    }
+  }
+
+  String _retainInitLiteral(
+    ConstantReader retainReader,
+    String dartTypeName,
+    FieldElement field,
+  ) {
+    final init = retainReader.read('init');
+    final literal = init.literalValue;
+
+    switch (dartTypeName) {
+      case 'bool':
+        if (literal is! bool) {
+          throw InvalidGenerationSourceError(
+            '@Retain init value must be bool for field "${field.name}".',
+            element: field,
+          );
+        }
+        return literal.toString();
+      case 'int':
+        if (literal is! int) {
+          throw InvalidGenerationSourceError(
+            '@Retain init value must be int for field "${field.name}".',
+            element: field,
+          );
+        }
+        return literal.toString();
+      case 'double':
+        if (literal is! int && literal is! double) {
+          throw InvalidGenerationSourceError(
+            '@Retain init value must be double for field "${field.name}".',
+            element: field,
+          );
+        }
+        return literal.toString();
+      case 'String':
+        if (literal is! String) {
+          throw InvalidGenerationSourceError(
+            '@Retain init value must be String for field "${field.name}".',
+            element: field,
+          );
+        }
+        return "'${_escapeDartString(literal)}'";
+      default:
+        throw InvalidGenerationSourceError(
+          '@Retain is not supported for type $dartTypeName on field "${field.name}".',
+          element: field,
+        );
+    }
   }
 
   _ControlDirection? _controlDirection(FieldElement field) {
@@ -357,6 +475,8 @@ class _ControlInfo {
     required this.typeEnumName,
     required this.dartTypeName,
     required this.retainedPublish,
+    required this.retain,
+    this.retainInitLiteral,
     this.min,
     this.max,
     this.precision,
@@ -370,6 +490,8 @@ class _ControlInfo {
   final String typeEnumName;
   final String dartTypeName;
   final bool retainedPublish;
+  final bool retain;
+  final String? retainInitLiteral;
   final double? min;
   final double? max;
   final double? precision;

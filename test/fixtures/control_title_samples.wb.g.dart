@@ -21,6 +21,7 @@ mixin ControlTitleSamplesWbMixin {
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
+    final device = this as ControlTitleSamples;
     WbClient.getInstanse().publish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),

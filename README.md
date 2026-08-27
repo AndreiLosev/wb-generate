@@ -75,11 +75,29 @@ device.init();
 
 | Метод | Поведение |
 |---|---|
-| `init()` | retained-публикация meta устройства, meta всех контролов и текущих значений `@OutputControl` через `set<Field>` |
+| `init()` | восстановление `@Retain` из `WbStorage`, retained-публикация meta устройства, meta всех контролов и текущих значений `@OutputControl` через `set<Field>` |
 | `inputs()` | топики подписки `@InputControl`: `{device}/{control}/on` |
 | `outputs()` | топики подписки `@OutputControl`: `{device}/{control}/on` |
 | `setLamp(value)` | записывает значение в поле и MQTT publish в основной топик `{device}/{control}` |
-| `updateField(mess)` | по `mess.topic` (`.../on`) находит контрол, декодирует `mess.payload`, нормализует значение, записывает в поле и публикует в основной топик `{device}/{control}` |
+| `updateField(mess)` | по `mess.topic` (`.../on`) находит контрол, декодирует `mess.payload`, нормализует значение, записывает в поле, публикует в основной топик `{device}/{control}` и для `@Retain` сохраняет в `WbStorage` |
+
+### Персистентность `@Retain`
+
+На поле `@InputControl` или `@OutputControl` можно добавить `@Retain(init)` — значение сохраняется между перезапусками драйвера.
+
+- Ключ в storage: `{name}.{fieldName}` (имя устройства и имя поля в Dart).
+- `init()` — `WbHiveStorage.getInstanse().get(key, init)` и publish в основной топик `{device}/{control}`.
+- `updateField` — `WbHiveStorage.getInstanse().put(key, value)` после успешной записи в поле.
+- Перед `init()` нужно открыть storage: `await WbHiveStorage(directory: ...).open()`.
+
+```dart
+@Retain('0')
+@OutputControl(
+  type: WbControlType.text,
+  title: WbLocalizedTitle(en: 'Mode'),
+)
+String mode = '0';
+```
 
 ### Нормализация значений
 
@@ -104,4 +122,62 @@ device.init();
 
 Поле `driver` в meta устройства всегда `vktmotage`. Поле `order` в meta контрола генерируется автоматически (1, 2, 3, …) по порядку полей в классе. Поля `readonly` и `hidden` всегда присутствуют в meta контрола.
 
-Сгенерированный mixin — `part of` исходного файла, использует `WbClient.getInstanse()`.
+Сгенерированный mixin — `part of` исходного файла, использует `WbClient.getInstanse()` и `WbHiveStorage.getInstanse()`.
+
+## Конфиг из pubspec.yaml
+
+Секция `wirenboard` в `pubspec.yaml` описывает окружения (`dev`, `prod`, …). Генератор `wb_config` создаёт `lib/wb_config.g.dart` с плоским классом `WbConfig` — **только поля активного окружения**. Окружение задаётся опцией `current_env` при сборке (по умолчанию `dev`).
+
+Секция `wirenboard` **опциональна**: если её нет, `wb_config` не генерирует `lib/wb_config.g.dart` и сборка не падает. Не импортируйте `wb_config.g.dart`, если секция не используется.
+
+```yaml
+wirenboard:
+  dev:
+    host: 192.168.1.24
+    port: 1883
+    client_id: my-pc-123
+    username: user
+    password: pass
+    data_path: /var/lib/my-driver/state.json
+  prod:
+    host: localhost
+    port: 1883
+    client_id: my-pc-123
+    data_path: /var/lib/my-driver/state.json
+```
+
+```bash
+dart run build_runner build
+```
+
+Сборка для prod:
+
+```bash
+dart run build_runner build --define "wb_generate|wb_config=current_env=prod"
+```
+
+Или в `build.yaml` пакета:
+
+```yaml
+targets:
+  $default:
+    builders:
+      wb_generate|wb_config:
+        enabled: true
+        options:
+          current_env: prod
+```
+
+```dart
+import 'package:my_driver/wb_config.g.dart';
+
+final client = WbClient(
+  host: wbConfig.host,
+  port: wbConfig.port,
+  clientId: wbConfig.clientId,
+);
+```
+
+Смена окружения: передать `current_env` через `--define` или `build.yaml` и пересобрать. Поле `current_env` не попадает в сгенерированный класс.
+
+Пароли и другие секреты из pubspec попадут в сгенерированный файл — не коммитьте их при публикации пакета.

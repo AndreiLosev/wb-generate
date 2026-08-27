@@ -43,6 +43,7 @@ class RoomLight with RoomLightWbMixin implements IDevice {
   )
   double power = 0;
 
+  @Retain('0')
   @OutputControl(
     type: WbControlType.text,
     enumTitles: {

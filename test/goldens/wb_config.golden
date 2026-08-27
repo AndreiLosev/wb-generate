@@ -1,0 +1,29 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+class WbConfig {
+  const WbConfig({
+    required this.host,
+    this.port = 1883,
+    required this.clientId,
+    required this.username,
+    required this.password,
+    required this.dataPath,
+  });
+
+  static const WbConfig instance = WbConfig(
+    host: '192.168.1.24',
+    clientId: 'my-pc-123',
+    username: 'user',
+    password: 'pass',
+    dataPath: '/var/lib/my-driver/state.json',
+  );
+
+  final String host;
+  final int port;
+  final String clientId;
+  final String username;
+  final String password;
+  final String dataPath;
+}
+
+const wbConfig = WbConfig.instance;

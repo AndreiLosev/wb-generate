@@ -3,7 +3,13 @@ targets:
     builders:
       wb_generate|wb_device:
         enabled: true
+      wb_generate|wb_config:
+        enabled: false
     sources:
+      include:
+        - pubspec.*
+        - lib/**
+        - test/**
       exclude:
         - test/fixtures/missing_idevice.dart
 
@@ -14,3 +20,13 @@ builders:
     build_extensions: {".dart": [".wb.g.dart"]}
     auto_apply: dependents
     build_to: source
+  wb_config:
+    import: "package:wb_generate/builder.dart"
+    builder_factories: ["wbConfigBuilder"]
+    build_extensions: {"pubspec.yaml": ["lib/wb_config.g.dart"]}
+    auto_apply: dependents
+    build_to: source
+    defaults:
+      generate_for:
+        include:
+          - pubspec.yaml

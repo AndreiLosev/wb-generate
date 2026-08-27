@@ -20,4 +20,17 @@ void main() {
       expect(toSetterName('switchState'), 'setSwitchState');
     });
   });
+
+  group('toCamelCase', () {
+    test('преобразует snake_case в camelCase', () {
+      expect(toCamelCase('client_id'), 'clientId');
+      expect(toCamelCase('data_path'), 'dataPath');
+      expect(toCamelCase('current_env'), 'currentEnv');
+    });
+
+    test('оставляет простые имена без изменений', () {
+      expect(toCamelCase('host'), 'host');
+      expect(toCamelCase('port'), 'port');
+    });
+  });
 }

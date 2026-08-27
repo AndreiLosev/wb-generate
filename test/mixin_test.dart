@@ -4,24 +4,29 @@ import 'package:wb_annatation/wb_annatation.dart';
 import 'fixtures/room_light.dart';
 import 'support/mock_mqtt_client.dart';
 import 'support/test_wb_client.dart';
+import 'support/test_wb_storage.dart';
 
 void main() {
   group('RoomLightWbMixin', () {
     late TestWbClient wbClient;
     late MockWbMqttClient client;
+    late TestWbStorage wbStorage;
     late RoomLight device;
 
     setUpAll(() async {
       wbClient = await TestWbClient.create();
       client = wbClient.mock;
+      wbStorage = await TestWbStorage.create();
     });
 
     tearDownAll(() async {
       await wbClient.disposeForTest();
+      await wbStorage.disposeForTest();
     });
 
     setUp(() {
       client.publishes.clear();
+      wbStorage.mock.values.clear();
       device = RoomLight();
     });
 
@@ -55,9 +60,8 @@ void main() {
     });
 
     test('init публикует output values', () {
-      device
-        ..lamp = true
-        ..mode = '1';
+      device.lamp = true;
+      wbStorage.mock.put('room_light.mode', '1');
 
       device.init();
 
@@ -223,6 +227,54 @@ void main() {
               .having((p) => p.payload, 'payload', '15.7'),
         ),
       );
+    });
+
+    test('init восстанавливает @Retain поле из storage', () {
+      wbStorage.mock.put('room_light.mode', '1');
+
+      device.init();
+
+      expect(device.mode, '1');
+      expect(
+        client.publishes,
+        contains(
+          isA<MockPublish>()
+              .having((p) => p.topic, 'topic', 'room_light/mode')
+              .having((p) => p.payload, 'payload', '1')
+              .having((p) => p.retained, 'retained', isTrue),
+        ),
+      );
+    });
+
+    test('init использует Retain(init) если ключа нет в storage', () {
+      device.init();
+
+      expect(device.mode, '0');
+    });
+
+    test('updateField сохраняет @Retain поле в storage', () {
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/mode/on',
+          payload: '1',
+        ),
+      );
+
+      expect(wbStorage.mock.values['room_light.mode'], '1');
+    });
+
+    test('updateField не сохраняет @Retain при недопустимом enum', () {
+      wbStorage.mock.put('room_light.mode', '0');
+
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/mode/on',
+          payload: '2',
+        ),
+      );
+
+      expect(device.mode, '0');
+      expect(wbStorage.mock.values['room_light.mode'], '0');
     });
 
     test('updateField игнорирует mode вне enumTitles', () {

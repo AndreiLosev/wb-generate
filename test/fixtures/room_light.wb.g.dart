@@ -25,6 +25,16 @@ mixin RoomLightWbMixin {
 
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
+    final device = this as RoomLight;
+    device.mode =
+        WbHiveStorage.getInstanse().get('${_device.name}.mode', '0') as String;
+
+    WbClient.getInstanse().publish(
+      '${_device.name}/mode',
+      WbValueCodec.encode(device.mode, WbControlType.text),
+      retained: true,
+    );
+
     WbClient.getInstanse().publish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
@@ -36,8 +46,7 @@ mixin RoomLightWbMixin {
       WbClient.getInstanse().publish(topic, entry.value, retained: true);
     }
 
-    setLamp((this as RoomLight).lamp);
-    setMode((this as RoomLight).mode);
+    setLamp(device.lamp);
   }
 
   void setLamp(bool value) {
@@ -115,6 +124,7 @@ mixin RoomLightWbMixin {
           WbValueCodec.encode(value, WbControlType.text),
           retained: true,
         );
+        WbHiveStorage.getInstanse().put('${_device.name}.mode', value);
         return;
     }
   }

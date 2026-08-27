@@ -1,0 +1,20 @@
+name: wb_config_fixture
+description: Fixture for wb_config generator tests.
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.0
+
+wirenboard:
+  dev:
+    host: 192.168.1.24
+    port: 1883
+    client_id: my-pc-123
+    username: user
+    password: pass
+    data_path: /var/lib/my-driver/state.json
+  prod:
+    host: localhost
+    port: 1883
+    client_id: my-pc-123
+    data_path: /var/lib/my-driver/state.json
