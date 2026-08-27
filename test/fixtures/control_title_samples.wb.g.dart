@@ -22,7 +22,7 @@ mixin ControlTitleSamplesWbMixin {
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
     final device = this as ControlTitleSamples;
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
       retained: true,
@@ -30,7 +30,7 @@ mixin ControlTitleSamplesWbMixin {
 
     for (final entry in _controlMetaJson.entries) {
       final topic = '${_device.name}/${entry.key}/meta';
-      WbClient.getInstanse().publish(topic, entry.value, retained: true);
+      wbPublish(topic, entry.value, retained: true);
     }
   }
 
@@ -45,7 +45,7 @@ mixin ControlTitleSamplesWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
         device.wallSwitch = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/wall_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
@@ -55,7 +55,7 @@ mixin ControlTitleSamplesWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
         device.kitchenSwitch = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/kitchen_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,

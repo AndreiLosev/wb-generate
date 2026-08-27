@@ -99,7 +99,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       buffer.writeln();
       for (final control in retainedControls) {
         buffer
-          ..writeln('    WbClient.getInstanse().publish(')
+          ..writeln('    wbPublish(')
           ..writeln("      '\${_device.name}/${control.mqttName}',")
           ..writeln(
             '      WbValueCodec.encode(device.${control.fieldName}, WbControlType.${control.typeEnumName}),',
@@ -112,13 +112,13 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
 
     buffer
       ..writeln(
-        "    WbClient.getInstanse().publish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
+        "    wbPublish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
       )
       ..writeln()
       ..writeln('    for (final entry in _controlMetaJson.entries) {')
       ..writeln("      final topic = '\${_device.name}/\${entry.key}/meta';")
       ..writeln(
-        '      WbClient.getInstanse().publish(topic, entry.value, retained: true);',
+        '      wbPublish(topic, entry.value, retained: true);',
       )
       ..writeln('    }')
       ..writeln();
@@ -145,7 +145,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         _writeValueNormalization(buffer, control, '    ', 'normalized');
         buffer
           ..writeln('    device.${control.fieldName} = normalized;')
-          ..writeln('    WbClient.getInstanse().publish(')
+          ..writeln('    wbPublish(')
           ..writeln("      '\${_device.name}/${control.mqttName}',")
           ..writeln(
             '      WbValueCodec.encode(normalized, WbControlType.${control.typeEnumName}),',
@@ -157,7 +157,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       } else {
         buffer
           ..writeln('    device.${control.fieldName} = value;')
-          ..writeln('    WbClient.getInstanse().publish(')
+          ..writeln('    wbPublish(')
           ..writeln("      '\${_device.name}/${control.mqttName}',")
           ..writeln(
             '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
@@ -189,7 +189,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       _writeValueNormalization(buffer, control, '        ', 'value');
       buffer
         ..writeln('        device.${control.fieldName} = value;')
-        ..writeln('        WbClient.getInstanse().publish(')
+        ..writeln('        wbPublish(')
         ..writeln("          '\${_device.name}/${control.mqttName}',")
         ..writeln(
           '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',

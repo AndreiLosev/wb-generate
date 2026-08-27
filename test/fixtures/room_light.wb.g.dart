@@ -29,13 +29,13 @@ mixin RoomLightWbMixin {
     device.mode =
         WbHiveStorage.getInstanse().get('${_device.name}.mode', '0') as String;
 
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/mode',
       WbValueCodec.encode(device.mode, WbControlType.text),
       retained: true,
     );
 
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
       retained: true,
@@ -43,7 +43,7 @@ mixin RoomLightWbMixin {
 
     for (final entry in _controlMetaJson.entries) {
       final topic = '${_device.name}/${entry.key}/meta';
-      WbClient.getInstanse().publish(topic, entry.value, retained: true);
+      wbPublish(topic, entry.value, retained: true);
     }
 
     setLamp(device.lamp);
@@ -52,7 +52,7 @@ mixin RoomLightWbMixin {
   void setLamp(bool value) {
     final device = this as RoomLight;
     device.lamp = value;
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/lamp',
       WbValueCodec.encode(value, WbControlType.switch_),
       retained: true,
@@ -64,7 +64,7 @@ mixin RoomLightWbMixin {
     var normalized = value;
     if (!const {'0', '1'}.contains(normalized)) return;
     device.mode = normalized;
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/mode',
       WbValueCodec.encode(normalized, WbControlType.text),
       retained: true,
@@ -82,7 +82,7 @@ mixin RoomLightWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
         device.switchState = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/switch_state',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
@@ -92,7 +92,7 @@ mixin RoomLightWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
         device.lamp = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/lamp',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
@@ -108,7 +108,7 @@ mixin RoomLightWbMixin {
           precision: 0.1,
         );
         device.power = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/power',
           WbValueCodec.encode(value, WbControlType.value),
           retained: true,
@@ -119,7 +119,7 @@ mixin RoomLightWbMixin {
             WbValueCodec.decode(mess.payload, WbControlType.text) as String;
         if (!const {'0', '1'}.contains(value)) return;
         device.mode = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/mode',
           WbValueCodec.encode(value, WbControlType.text),
           retained: true,

@@ -22,7 +22,7 @@ mixin WoSwitchDeviceWbMixin {
   /// Публикует retained meta устройства, контролов и output values.
   void init() {
     final device = this as WoSwitchDevice;
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
       retained: true,
@@ -30,7 +30,7 @@ mixin WoSwitchDeviceWbMixin {
 
     for (final entry in _controlMetaJson.entries) {
       final topic = '${_device.name}/${entry.key}/meta';
-      WbClient.getInstanse().publish(topic, entry.value, retained: true);
+      wbPublish(topic, entry.value, retained: true);
     }
 
     setRelay(device.relay);
@@ -39,7 +39,7 @@ mixin WoSwitchDeviceWbMixin {
   void setRelay(bool value) {
     final device = this as WoSwitchDevice;
     device.relay = value;
-    WbClient.getInstanse().publish(
+    wbPublish(
       '${_device.name}/relay',
       WbValueCodec.encode(value, WbControlType.woSwitch),
       retained: true,
@@ -57,7 +57,7 @@ mixin WoSwitchDeviceWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.woSwitch) as bool;
         device.feedback = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/feedback',
           WbValueCodec.encode(value, WbControlType.woSwitch),
           retained: true,
@@ -67,7 +67,7 @@ mixin WoSwitchDeviceWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.woSwitch) as bool;
         device.relay = value;
-        WbClient.getInstanse().publish(
+        wbPublish(
           '${_device.name}/relay',
           WbValueCodec.encode(value, WbControlType.woSwitch),
           retained: true,
