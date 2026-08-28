@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:test/test.dart';
-import 'package:wb_annatation/wb_annatation.dart';
+import 'package:wb_sdk/wb_sdk.dart';
 import 'package:wb_generate/src/generator/meta_builder.dart';
 
 import 'support/analysis.dart';

@@ -5,7 +5,7 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_gen/source_gen.dart';
-import 'package:wb_annatation/wb_annatation.dart';
+import 'package:wb_sdk/wb_sdk.dart';
 
 import 'meta_builder.dart';
 import 'naming.dart';

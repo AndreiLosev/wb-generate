@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:wb_annatation/wb_annatation.dart';
+import 'package:wb_sdk/wb_sdk.dart';
 
 import 'fake_mqtt_broker.dart';
 import 'mock_mqtt_client.dart';

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:wb_annatation/wb_annatation.dart';
+import 'package:wb_sdk/wb_sdk.dart';
 
 import 'mock_wb_storage.dart';
 

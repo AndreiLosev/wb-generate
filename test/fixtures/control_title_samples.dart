@@ -1,4 +1,4 @@
-import 'package:wb_annatation/wb_annatation.dart';
+import 'package:wb_sdk/wb_sdk.dart';
 
 part 'control_title_samples.wb.g.dart';
 

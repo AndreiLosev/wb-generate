@@ -2,14 +2,14 @@
 
 `build_runner`-генератор MQTT-драйверов Wiren Board. Подключается только как **dev_dependency**.
 
-Runtime (аннотации, `IDevice`, `WbMqttClient`, `WbValueCodec`) — в пакете [`wb_annatation`](../wb-annatation).
+Runtime (аннотации, `IDevice`, `WbMqttClient`, `WbValueCodec`) — в пакете [`wb_sdk`](../wb-sdk).
 
 ## Зависимости
 
 ```yaml
 dependencies:
-  wb_annatation:
-    path: ../wb-annatation
+  wb_sdk:
+    path: ../wb-sdk
 
 dev_dependencies:
   wb_generate:
@@ -20,7 +20,7 @@ dev_dependencies:
 ## Использование
 
 ```dart
-import 'package:wb_annatation/wb_annatation.dart';
+import 'package:wb_sdk/wb_sdk.dart';
 
 part 'room_light.wb.g.dart';
 
