@@ -187,6 +187,15 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         'as ${control.dartTypeName};',
       );
       _writeValueNormalization(buffer, control, '        ', 'value');
+      if (control.retain) {
+        buffer
+          ..writeln('        if (device.${control.fieldName} != value) {')
+          ..writeln('          WbHiveStorage.getInstanse().put(')
+          ..writeln("            '\${_device.name}.${control.fieldName}',")
+          ..writeln('            value,')
+          ..writeln('          );')
+          ..writeln('        }');
+      }
       buffer
         ..writeln('        device.${control.fieldName} = value;')
         ..writeln('        wbPublish(')
@@ -196,13 +205,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         )
         ..writeln('          retained: ${control.retainedPublish},')
         ..writeln('        );');
-      if (control.retain) {
-        buffer
-          ..writeln('        WbHiveStorage.getInstanse().put(')
-          ..writeln("          '\${_device.name}.${control.fieldName}',")
-          ..writeln('          value,')
-          ..writeln('        );');
-      }
       buffer.writeln('        return;');
     }
 

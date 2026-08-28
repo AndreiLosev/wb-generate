@@ -87,7 +87,7 @@ device.init();
 
 - Ключ в storage: `{name}.{fieldName}` (имя устройства и имя поля в Dart).
 - `init()` — `WbHiveStorage.getInstanse().get(key, init)` и publish в основной топик `{device}/{control}`.
-- `updateField` — `WbHiveStorage.getInstanse().put(key, value)` после успешной записи в поле.
+- `updateField` — `WbHiveStorage.getInstanse().put(key, value)` только если новое значение отличается от текущего в поле.
 - Перед `init()` нужно открыть storage: `await WbHiveStorage(directory: ...).open()`.
 
 ```dart

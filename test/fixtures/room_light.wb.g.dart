@@ -118,13 +118,15 @@ mixin RoomLightWbMixin {
         final value =
             WbValueCodec.decode(mess.payload, WbControlType.text) as String;
         if (!const {'0', '1'}.contains(value)) return;
+        if (device.mode != value) {
+          WbHiveStorage.getInstanse().put('${_device.name}.mode', value);
+        }
         device.mode = value;
         wbPublish(
           '${_device.name}/mode',
           WbValueCodec.encode(value, WbControlType.text),
           retained: true,
         );
-        WbHiveStorage.getInstanse().put('${_device.name}.mode', value);
         return;
     }
   }

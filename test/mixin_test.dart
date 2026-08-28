@@ -263,6 +263,21 @@ void main() {
       expect(wbStorage.mock.values['room_light.mode'], '1');
     });
 
+    test('updateField не сохраняет @Retain если значение не изменилось', () {
+      device.mode = '1';
+      wbStorage.mock.put('room_light.mode', 'stale');
+
+      device.updateField(
+        const WbMqttMessage(
+          topic: 'room_light/mode/on',
+          payload: '1',
+        ),
+      );
+
+      expect(device.mode, '1');
+      expect(wbStorage.mock.values['room_light.mode'], 'stale');
+    });
+
     test('updateField не сохраняет @Retain при недопустимом enum', () {
       wbStorage.mock.put('room_light.mode', '0');
 
