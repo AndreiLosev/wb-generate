@@ -67,7 +67,9 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('mixin $mixinName {')
       ..writeln('  IDevice get _device => this as IDevice;')
       ..writeln()
-      ..writeln('  final Map<String, Map<String, dynamic>> _controlMetaJson = {');
+      ..writeln(
+        '  final Map<String, Map<String, dynamic>> controlMetaJson = {',
+      );
 
     for (final control in controls) {
       buffer.writeln(
@@ -90,7 +92,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln();
 
     buffer
-      ..writeln('    for (final entry in _controlMetaJson.entries) {')
+      ..writeln('    for (final entry in controlMetaJson.entries) {')
       ..writeln('      wbPublish(')
       ..writeln("        '\${_device.name}/\${entry.key}/meta',")
       ..writeln('        WbControlType.meta(entry.value),')
@@ -452,17 +454,16 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       final keys = control.enumAllowedKeys!
           .map((key) => "'${_escapeDartString(key)}'")
           .join(', ');
-      buffer.writeln(
-        '$indent if (!const {$keys}.contains($valueVar)) return;',
-      );
+      buffer.writeln('$indent if (!const {$keys}.contains($valueVar)) return;');
     }
 
     if (!control.hasNumericNormalization) {
       return;
     }
 
-    final method =
-        control.dartTypeName == 'int' ? 'normalizeInt' : 'normalizeDouble';
+    final method = control.dartTypeName == 'int'
+        ? 'normalizeInt'
+        : 'normalizeDouble';
     final params = <String>[];
     if (control.min != null) {
       params.add('min: ${control.min}');

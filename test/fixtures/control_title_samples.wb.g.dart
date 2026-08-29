@@ -12,7 +12,7 @@ part of 'control_title_samples.dart';
 mixin ControlTitleSamplesWbMixin {
   IDevice get _device => this as IDevice;
 
-  final Map<String, Map<String, dynamic>> _controlMetaJson = {
+  final Map<String, Map<String, dynamic>> controlMetaJson = {
     'wall_switch': {
       'type': 'switch',
       'title': {'en': 'wall_switch'},
@@ -39,7 +39,7 @@ mixin ControlTitleSamplesWbMixin {
       retained: true,
     );
 
-    for (final entry in _controlMetaJson.entries) {
+    for (final entry in controlMetaJson.entries) {
       wbPublish(
         '${_device.name}/${entry.key}/meta',
         WbControlType.meta(entry.value),
