@@ -12,26 +12,45 @@ part of 'control_title_samples.dart';
 mixin ControlTitleSamplesWbMixin {
   IDevice get _device => this as IDevice;
 
-  static const Map<String, String> _controlMetaJson = {
-    'wall_switch':
-        '{"type":"switch","title":{"en":"wall_switch"},"order":1,"readonly":false,"hidden":false}',
-    'kitchen_switch':
-        '{"type":"switch","title":{"en":"kitchen_switch","ru":"Выключатель"},"order":2,"readonly":false,"hidden":false}',
+  final Map<String, Map<String, dynamic>> _controlMetaJson = {
+    'wall_switch': {
+      'type': 'switch',
+      'title': {'en': 'wall_switch'},
+      'order': 1,
+      'readonly': false,
+      'hidden': false,
+    },
+    'kitchen_switch': {
+      'type': 'switch',
+      'title': {'en': 'kitchen_switch', 'ru': 'Выключатель'},
+      'order': 2,
+      'readonly': false,
+      'hidden': false,
+    },
   };
 
-  /// Публикует retained meta устройства, контролов и output values.
+  /// Публикует retained meta, затем значения output-контролов и вызывает execute().
   void init() {
     final device = this as ControlTitleSamples;
+
     wbPublish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
       retained: true,
     );
 
-    for (final entry in _controlMetaJson.entries) {
-      final topic = '${_device.name}/${entry.key}/meta';
-      wbPublish(topic, entry.value, retained: true);
-    }
+    wbPublish(
+      '${_device.name}/wall_switch/meta',
+      WbControlType.meta(_controlMetaJson['wall_switch']!),
+      retained: true,
+    );
+    wbPublish(
+      '${_device.name}/kitchen_switch/meta',
+      WbControlType.meta(_controlMetaJson['kitchen_switch']!),
+      retained: true,
+    );
+
+    device.execute();
   }
 
   void updateField(WbMqttMessage mess) {

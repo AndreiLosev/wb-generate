@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 import 'package:source_gen/source_gen.dart';
 
 import 'naming.dart';
 
-/// Собирает JSON-метаданные контролов Wiren Board.
+/// Собирает метаданные контролов Wiren Board.
 class MetaBuilder {
-  static String controlMetaJson(
+  static Map<String, dynamic> controlMeta(
     ConstantReader annotation, {
     required String fieldName,
     required int order,
@@ -44,7 +42,44 @@ class MetaBuilder {
       meta['enum'] = _enumTitlesMap(enumTitles);
     }
 
-    return jsonEncode(meta);
+    return meta;
+  }
+
+  static String toDartLiteral(Object? value) {
+    if (value == null) {
+      return 'null';
+    }
+
+    if (value is Map) {
+      final entries = value.entries
+          .map(
+            (entry) =>
+                "'${_escapeDartString(entry.key.toString())}': ${toDartLiteral(entry.value)}",
+          )
+          .join(', ');
+      return '{$entries}';
+    }
+
+    if (value is String) {
+      return "'${_escapeDartString(value)}'";
+    }
+
+    if (value is bool) {
+      return value ? 'true' : 'false';
+    }
+
+    if (value is int) {
+      return '$value';
+    }
+
+    if (value is double) {
+      if (value == value.roundToDouble()) {
+        return '${value.toInt()}.0';
+      }
+      return '$value';
+    }
+
+    throw ArgumentError('Unsupported value type: ${value.runtimeType}');
   }
 
   static Map<String, String> _controlTitleMap(
@@ -86,5 +121,12 @@ class MetaBuilder {
       result[keyString] = localized;
     }
     return result;
+  }
+
+  static String _escapeDartString(String value) {
+    return value
+        .replaceAll(r'\', r'\\')
+        .replaceAll("'", r"\'")
+        .replaceAll(r'$', r'\$');
   }
 }

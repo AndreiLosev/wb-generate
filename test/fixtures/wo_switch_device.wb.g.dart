@@ -12,28 +12,51 @@ part of 'wo_switch_device.dart';
 mixin WoSwitchDeviceWbMixin {
   IDevice get _device => this as IDevice;
 
-  static const Map<String, String> _controlMetaJson = {
-    'feedback':
-        '{"type":"wo-switch","title":{"en":"feedback"},"order":1,"readonly":false,"hidden":false}',
-    'relay':
-        '{"type":"wo-switch","title":{"en":"relay"},"order":2,"readonly":false,"hidden":false}',
+  final Map<String, Map<String, dynamic>> _controlMetaJson = {
+    'feedback': {
+      'type': 'wo-switch',
+      'title': {'en': 'feedback'},
+      'order': 1,
+      'readonly': false,
+      'hidden': false,
+    },
+    'relay': {
+      'type': 'wo-switch',
+      'title': {'en': 'relay'},
+      'order': 2,
+      'readonly': false,
+      'hidden': false,
+    },
   };
 
-  /// Публикует retained meta устройства, контролов и output values.
+  /// Публикует retained meta, затем значения output-контролов и вызывает execute().
   void init() {
     final device = this as WoSwitchDevice;
+
     wbPublish(
       '${_device.name}/meta',
       WbMetaJson.device(_device.title),
       retained: true,
     );
 
-    for (final entry in _controlMetaJson.entries) {
-      final topic = '${_device.name}/${entry.key}/meta';
-      wbPublish(topic, entry.value, retained: true);
-    }
+    wbPublish(
+      '${_device.name}/feedback/meta',
+      WbControlType.meta(_controlMetaJson['feedback']!),
+      retained: true,
+    );
+    wbPublish(
+      '${_device.name}/relay/meta',
+      WbControlType.meta(_controlMetaJson['relay']!),
+      retained: true,
+    );
 
-    setRelay(device.relay);
+    wbPublish(
+      '${_device.name}/relay',
+      WbValueCodec.encode(device.relay, WbControlType.woSwitch),
+      retained: true,
+    );
+
+    device.execute();
   }
 
   void setRelay(bool value) {

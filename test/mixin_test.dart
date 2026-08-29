@@ -59,6 +59,12 @@ void main() {
       );
     });
 
+    test('init вызывает execute', () {
+      device.init();
+
+      expect(device.executeCalled, isTrue);
+    });
+
     test('init публикует output values', () {
       device.lamp = true;
       wbStorage.mock.put('room_light.mode', '1');

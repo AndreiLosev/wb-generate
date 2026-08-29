@@ -9,7 +9,8 @@ import 'support/analysis.dart';
 void main() {
   group('MetaBuilder', () {
     test('собирает meta контрола с опциональными полями', () async {
-      final json = await _controlMetaJson('lamp');
+      final meta = await _controlMeta('lamp');
+      final json = WbControlType.meta(meta);
       expect(json, contains('"type":"switch"'));
       expect(json, contains('"order":2'));
       expect(json, contains('"title":{"en":"Lamp","ru":"Лампа"}'));
@@ -18,7 +19,8 @@ void main() {
     });
 
     test('включает readonly, hidden, enum и units', () async {
-      final json = await _controlMetaJson('power');
+      final meta = await _controlMeta('power');
+      final json = WbControlType.meta(meta);
       expect(json, contains('"type":"value"'));
       expect(json, contains('"units":"W"'));
       expect(json, contains('"readonly":true'));
@@ -27,25 +29,28 @@ void main() {
     });
 
     test('собирает enumTitles для text-контрола', () async {
-      final json = await _controlMetaJson('mode');
+      final meta = await _controlMeta('mode');
+      final json = WbControlType.meta(meta);
       expect(json, contains('"enum":{"0":{"en":"Off","ru":"Выкл"}'));
     });
 
     test('использует snake_case поля как en, если title не задан', () async {
-      final json = await _controlMetaJsonFromFixture(
+      final meta = await _controlMetaFromFixture(
         'ControlTitleSamples',
         'wallSwitch',
       );
+      final json = WbControlType.meta(meta);
 
       expect(json, contains('"title":{"en":"wall_switch"}'));
       expect(json, contains('"order":1'));
     });
 
     test('использует snake_case поля как en, если title.en не задан', () async {
-      final json = await _controlMetaJsonFromFixture(
+      final meta = await _controlMetaFromFixture(
         'ControlTitleSamples',
         'kitchenSwitch',
       );
+      final json = WbControlType.meta(meta);
 
       expect(
         json,
@@ -56,7 +61,7 @@ void main() {
   });
 }
 
-Future<String> _controlMetaJsonFromFixture(
+Future<Map<String, dynamic>> _controlMetaFromFixture(
   String className,
   String fieldName,
 ) async {
@@ -65,20 +70,20 @@ Future<String> _controlMetaJsonFromFixture(
   final reader = _controlReader(field);
   final order = _controlOrder(clazz, fieldName);
 
-  return MetaBuilder.controlMetaJson(
+  return MetaBuilder.controlMeta(
     reader,
     fieldName: field.name,
     order: order,
   );
 }
 
-Future<String> _controlMetaJson(String fieldName) async {
+Future<Map<String, dynamic>> _controlMeta(String fieldName) async {
   final clazz = await resolveFixtureClass('RoomLight');
   final field = clazz.getField(fieldName)!;
   final reader = _controlReader(field);
   final order = _controlOrder(clazz, fieldName);
 
-  return MetaBuilder.controlMetaJson(
+  return MetaBuilder.controlMeta(
     reader,
     fieldName: field.name,
     order: order,

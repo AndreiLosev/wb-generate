@@ -67,11 +67,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('mixin $mixinName {')
       ..writeln('  IDevice get _device => this as IDevice;')
       ..writeln()
-      ..writeln('  static const Map<String, String> _controlMetaJson = {');
+      ..writeln('  final Map<String, Map<String, dynamic>> _controlMetaJson = {');
 
     for (final control in controls) {
       buffer.writeln(
-        "    '${control.mqttName}': '${_escapeDartString(control.metaJson)}',",
+        "    '${control.mqttName}': ${MetaBuilder.toDartLiteral(control.controlMeta)},",
       );
     }
 
@@ -79,10 +79,28 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('  };')
       ..writeln()
       ..writeln(
-        '  /// Публикует retained meta устройства, контролов и output values.',
+        '  /// Публикует retained meta, затем значения output-контролов и вызывает execute().',
       )
       ..writeln('  void init() {')
-      ..writeln('    final device = this as $className;');
+      ..writeln('    final device = this as $className;')
+      ..writeln()
+      ..writeln(
+        "    wbPublish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
+      )
+      ..writeln();
+
+    for (final control in controls) {
+      buffer
+        ..writeln('    wbPublish(')
+        ..writeln("      '\${_device.name}/${control.mqttName}/meta',")
+        ..writeln(
+          "      WbControlType.meta(_controlMetaJson['${control.mqttName}']!),",
+        )
+        ..writeln('      retained: true,')
+        ..writeln('    );');
+    }
+
+    buffer.writeln();
 
     final retainedControls = controls.where((c) => c.retain).toList();
     for (final control in retainedControls) {
@@ -110,29 +128,24 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       buffer.writeln();
     }
 
-    buffer
-      ..writeln(
-        "    wbPublish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
-      )
-      ..writeln()
-      ..writeln('    for (final entry in _controlMetaJson.entries) {')
-      ..writeln("      final topic = '\${_device.name}/\${entry.key}/meta';")
-      ..writeln(
-        '      wbPublish(topic, entry.value, retained: true);',
-      )
-      ..writeln('    }')
-      ..writeln();
-
     for (final control in outputControls) {
       if (control.retain) {
         continue;
       }
-      buffer.writeln(
-        '    ${toSetterName(control.fieldName)}(device.${control.fieldName});',
-      );
+      buffer
+        ..writeln('    wbPublish(')
+        ..writeln("      '\${_device.name}/${control.mqttName}',")
+        ..writeln(
+          '      WbValueCodec.encode(device.${control.fieldName}, WbControlType.${control.typeEnumName}),',
+        )
+        ..writeln('      retained: ${control.retainedPublish},')
+        ..writeln('    );');
     }
 
-    buffer.writeln('  }');
+    buffer
+      ..writeln()
+      ..writeln('    device.execute();')
+      ..writeln('  }');
     buffer.writeln();
 
     for (final control in outputControls) {
@@ -299,7 +312,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           max: reader.peek('max')?.doubleValue,
           precision: reader.peek('precision')?.doubleValue,
           enumAllowedKeys: _readEnumAllowedKeys(reader),
-          metaJson: MetaBuilder.controlMetaJson(
+          controlMeta: MetaBuilder.controlMeta(
             reader,
             fieldName: field.name,
             order: order,
@@ -483,7 +496,7 @@ class _ControlInfo {
     this.max,
     this.precision,
     this.enumAllowedKeys,
-    required this.metaJson,
+    required this.controlMeta,
   });
 
   final _ControlDirection direction;
@@ -498,7 +511,7 @@ class _ControlInfo {
   final double? max;
   final double? precision;
   final List<String>? enumAllowedKeys;
-  final String metaJson;
+  final Map<String, dynamic> controlMeta;
 
   bool get hasNumericNormalization {
     if (dartTypeName != 'int' && dartTypeName != 'double') {

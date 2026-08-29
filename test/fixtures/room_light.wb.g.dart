@@ -12,20 +12,76 @@ part of 'room_light.dart';
 mixin RoomLightWbMixin {
   IDevice get _device => this as IDevice;
 
-  static const Map<String, String> _controlMetaJson = {
-    'switch_state':
-        '{"type":"switch","title":{"en":"Switch","ru":"Выключатель"},"order":1,"readonly":false,"hidden":false}',
-    'lamp':
-        '{"type":"switch","title":{"en":"Lamp","ru":"Лампа"},"order":2,"readonly":false,"hidden":false}',
-    'power':
-        '{"type":"value","title":{"en":"Power","ru":"Мощность"},"order":3,"readonly":true,"hidden":false,"units":"W","min":0.0,"max":5000.0,"precision":0.1}',
-    'mode':
-        '{"type":"text","title":{"en":"Mode","ru":"Режим"},"order":4,"readonly":false,"hidden":false,"enum":{"0":{"en":"Off","ru":"Выкл"},"1":{"en":"On","ru":"Вкл"}}}',
+  final Map<String, Map<String, dynamic>> _controlMetaJson = {
+    'switch_state': {
+      'type': 'switch',
+      'title': {'en': 'Switch', 'ru': 'Выключатель'},
+      'order': 1,
+      'readonly': false,
+      'hidden': false,
+    },
+    'lamp': {
+      'type': 'switch',
+      'title': {'en': 'Lamp', 'ru': 'Лампа'},
+      'order': 2,
+      'readonly': false,
+      'hidden': false,
+    },
+    'power': {
+      'type': 'value',
+      'title': {'en': 'Power', 'ru': 'Мощность'},
+      'order': 3,
+      'readonly': true,
+      'hidden': false,
+      'units': 'W',
+      'min': 0.0,
+      'max': 5000.0,
+      'precision': 0.1,
+    },
+    'mode': {
+      'type': 'text',
+      'title': {'en': 'Mode', 'ru': 'Режим'},
+      'order': 4,
+      'readonly': false,
+      'hidden': false,
+      'enum': {
+        '0': {'en': 'Off', 'ru': 'Выкл'},
+        '1': {'en': 'On', 'ru': 'Вкл'},
+      },
+    },
   };
 
-  /// Публикует retained meta устройства, контролов и output values.
+  /// Публикует retained meta, затем значения output-контролов и вызывает execute().
   void init() {
     final device = this as RoomLight;
+
+    wbPublish(
+      '${_device.name}/meta',
+      WbMetaJson.device(_device.title),
+      retained: true,
+    );
+
+    wbPublish(
+      '${_device.name}/switch_state/meta',
+      WbControlType.meta(_controlMetaJson['switch_state']!),
+      retained: true,
+    );
+    wbPublish(
+      '${_device.name}/lamp/meta',
+      WbControlType.meta(_controlMetaJson['lamp']!),
+      retained: true,
+    );
+    wbPublish(
+      '${_device.name}/power/meta',
+      WbControlType.meta(_controlMetaJson['power']!),
+      retained: true,
+    );
+    wbPublish(
+      '${_device.name}/mode/meta',
+      WbControlType.meta(_controlMetaJson['mode']!),
+      retained: true,
+    );
+
     device.mode =
         WbHiveStorage.getInstanse().get('${_device.name}.mode', '0') as String;
 
@@ -36,17 +92,12 @@ mixin RoomLightWbMixin {
     );
 
     wbPublish(
-      '${_device.name}/meta',
-      WbMetaJson.device(_device.title),
+      '${_device.name}/lamp',
+      WbValueCodec.encode(device.lamp, WbControlType.switch_),
       retained: true,
     );
 
-    for (final entry in _controlMetaJson.entries) {
-      final topic = '${_device.name}/${entry.key}/meta';
-      wbPublish(topic, entry.value, retained: true);
-    }
-
-    setLamp(device.lamp);
+    device.execute();
   }
 
   void setLamp(bool value) {
