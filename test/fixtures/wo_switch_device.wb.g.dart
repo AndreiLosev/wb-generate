@@ -39,16 +39,13 @@ mixin WoSwitchDeviceWbMixin {
       retained: true,
     );
 
-    wbPublish(
-      '${_device.name}/feedback/meta',
-      WbControlType.meta(_controlMetaJson['feedback']!),
-      retained: true,
-    );
-    wbPublish(
-      '${_device.name}/relay/meta',
-      WbControlType.meta(_controlMetaJson['relay']!),
-      retained: true,
-    );
+    for (final entry in _controlMetaJson.entries) {
+      wbPublish(
+        '${_device.name}/${entry.key}/meta',
+        WbControlType.meta(entry.value),
+        retained: true,
+      );
+    }
 
     wbPublish(
       '${_device.name}/relay',

@@ -89,16 +89,14 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       )
       ..writeln();
 
-    for (final control in controls) {
-      buffer
-        ..writeln('    wbPublish(')
-        ..writeln("      '\${_device.name}/${control.mqttName}/meta',")
-        ..writeln(
-          "      WbControlType.meta(_controlMetaJson['${control.mqttName}']!),",
-        )
-        ..writeln('      retained: true,')
-        ..writeln('    );');
-    }
+    buffer
+      ..writeln('    for (final entry in _controlMetaJson.entries) {')
+      ..writeln('      wbPublish(')
+      ..writeln("        '\${_device.name}/\${entry.key}/meta',")
+      ..writeln('        WbControlType.meta(entry.value),')
+      ..writeln('        retained: true,')
+      ..writeln('      );')
+      ..writeln('    }');
 
     buffer.writeln();
 

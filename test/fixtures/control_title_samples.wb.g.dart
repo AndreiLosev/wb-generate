@@ -39,16 +39,13 @@ mixin ControlTitleSamplesWbMixin {
       retained: true,
     );
 
-    wbPublish(
-      '${_device.name}/wall_switch/meta',
-      WbControlType.meta(_controlMetaJson['wall_switch']!),
-      retained: true,
-    );
-    wbPublish(
-      '${_device.name}/kitchen_switch/meta',
-      WbControlType.meta(_controlMetaJson['kitchen_switch']!),
-      retained: true,
-    );
+    for (final entry in _controlMetaJson.entries) {
+      wbPublish(
+        '${_device.name}/${entry.key}/meta',
+        WbControlType.meta(entry.value),
+        retained: true,
+      );
+    }
 
     device.execute();
   }

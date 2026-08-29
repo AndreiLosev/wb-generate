@@ -61,26 +61,13 @@ mixin RoomLightWbMixin {
       retained: true,
     );
 
-    wbPublish(
-      '${_device.name}/switch_state/meta',
-      WbControlType.meta(_controlMetaJson['switch_state']!),
-      retained: true,
-    );
-    wbPublish(
-      '${_device.name}/lamp/meta',
-      WbControlType.meta(_controlMetaJson['lamp']!),
-      retained: true,
-    );
-    wbPublish(
-      '${_device.name}/power/meta',
-      WbControlType.meta(_controlMetaJson['power']!),
-      retained: true,
-    );
-    wbPublish(
-      '${_device.name}/mode/meta',
-      WbControlType.meta(_controlMetaJson['mode']!),
-      retained: true,
-    );
+    for (final entry in _controlMetaJson.entries) {
+      wbPublish(
+        '${_device.name}/${entry.key}/meta',
+        WbControlType.meta(entry.value),
+        retained: true,
+      );
+    }
 
     device.mode =
         WbHiveStorage.getInstanse().get('${_device.name}.mode', '0') as String;
