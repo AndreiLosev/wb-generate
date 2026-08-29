@@ -3,11 +3,13 @@ import 'package:wb_sdk/wb_sdk.dart';
 part 'control_title_samples.wb.g.dart';
 
 @VirtualDevice()
-class ControlTitleSamples with ControlTitleSamplesWbMixin implements IDevice {
+base class ControlTitleSamples extends IDevice with ControlTitleSamplesPartMixin {
   ControlTitleSamples({
     this.name = 'title_samples',
     this.title = const WbLocalizedTitle(en: 'Title Samples'),
-  });
+  }) {
+    register(this);
+  }
 
   @override
   final String name;

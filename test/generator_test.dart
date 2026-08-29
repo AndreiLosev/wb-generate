@@ -9,7 +9,7 @@ import 'package:wb_generate/src/generator/wb_device_generator.dart';
 import 'support/analysis.dart';
 
 void main() {
-  test('генерирует RoomLightWbMixin', () async {
+  test('генерирует RoomLightPartMixin', () async {
     final clazz = await resolveFixtureClass('RoomLight');
     final annotation = ConstantReader(
       const TypeChecker.fromRuntime(
@@ -30,7 +30,7 @@ void main() {
     expect(normalizeGenerated(output!), golden);
   });
 
-  test('требует implements IDevice', () async {
+  test('требует extends IDevice', () async {
     final clazz = await resolveFixtureClass('MissingDevice');
     final annotation = ConstantReader(
       const TypeChecker.fromRuntime(

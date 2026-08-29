@@ -6,7 +6,7 @@ import 'support/mock_mqtt_client.dart';
 import 'support/test_wb_client.dart';
 
 void main() {
-  group('WoSwitchDeviceWbMixin', () {
+  group('WoSwitchDevicePartMixin', () {
     late TestWbClient wbClient;
     late MockWbMqttClient client;
     late WoSwitchDevice device;

@@ -31,9 +31,10 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       );
     }
 
-    if (!_iDeviceChecker.isAssignableFromType(element.thisType)) {
+    final supertype = element.supertype;
+    if (supertype == null || !_iDeviceChecker.isExactlyType(supertype)) {
       throw InvalidGenerationSourceError(
-        '@VirtualDevice class must implement IDevice.',
+        '@VirtualDevice class must extend IDevice.',
         element: element,
       );
     }
@@ -49,7 +50,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     }
 
     final className = element.name;
-    final mixinName = '${className}WbMixin';
+    final mixinName = '${className}PartMixin';
     final importPath = p.basename(buildStep.inputId.path);
 
     final inputControls = controls
@@ -58,18 +59,36 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     final outputControls = controls
         .where((c) => c.direction == _ControlDirection.output)
         .toList();
+    final retainedControls = controls.where((c) => c.retain).toList();
 
     final buffer = StringBuffer()
       ..writeln('// GENERATED CODE - DO NOT MODIFY BY HAND')
       ..writeln()
       ..writeln("part of '$importPath';")
       ..writeln()
-      ..writeln('mixin $mixinName {')
-      ..writeln('  IDevice get _device => this as IDevice;')
+      ..writeln('mixin $mixinName on IDevice implements PartOfIDevice {')
+      ..writeln('  @override')
+      ..writeln('  Set<String> addInputs() => {');
+
+    for (final control in inputControls) {
+      buffer.writeln("    '\$name/${control.mqttName}/on',");
+    }
+
+    buffer
+      ..writeln('  };')
       ..writeln()
-      ..writeln(
-        '  final Map<String, Map<String, dynamic>> controlMetaJson = {',
-      );
+      ..writeln('  @override')
+      ..writeln('  Set<String> addOutputs() => {');
+
+    for (final control in outputControls) {
+      buffer.writeln("    '\$name/${control.mqttName}/on',");
+    }
+
+    buffer
+      ..writeln('  };')
+      ..writeln()
+      ..writeln('  @override')
+      ..writeln('  Map<String, Map<String, dynamic>> addMeta() => {');
 
     for (final control in controls) {
       buffer.writeln(
@@ -80,73 +99,66 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     buffer
       ..writeln('  };')
       ..writeln()
-      ..writeln(
-        '  /// Публикует retained meta, затем значения output-контролов и вызывает execute().',
-      )
-      ..writeln('  void init() {')
-      ..writeln('    final device = this as $className;')
-      ..writeln()
-      ..writeln(
-        "    wbPublish('\${_device.name}/meta', WbMetaJson.device(_device.title), retained: true);",
-      )
-      ..writeln();
+      ..writeln('  @override')
+      ..writeln('  Map<String, Object?> addRetains() => {');
 
-    buffer
-      ..writeln('    for (final entry in controlMetaJson.entries) {')
-      ..writeln('      wbPublish(')
-      ..writeln("        '\${_device.name}/\${entry.key}/meta',")
-      ..writeln('        WbControlType.meta(entry.value),')
-      ..writeln('        retained: true,')
-      ..writeln('      );')
-      ..writeln('    }');
-
-    buffer.writeln();
-
-    final retainedControls = controls.where((c) => c.retain).toList();
     for (final control in retainedControls) {
-      buffer
-        ..writeln(
-          '    device.${control.fieldName} = WbHiveStorage.getInstanse().get(',
-        )
-        ..writeln("      '\${_device.name}.${control.fieldName}',")
-        ..writeln('      ${control.retainInitLiteral},')
-        ..writeln('    ) as ${control.dartTypeName};');
-    }
-
-    if (retainedControls.isNotEmpty) {
-      buffer.writeln();
-      for (final control in retainedControls) {
-        buffer
-          ..writeln('    wbPublish(')
-          ..writeln("      '\${_device.name}/${control.mqttName}',")
-          ..writeln(
-            '      WbValueCodec.encode(device.${control.fieldName}, WbControlType.${control.typeEnumName}),',
-          )
-          ..writeln('      retained: ${control.retainedPublish},')
-          ..writeln('    );');
-      }
-      buffer.writeln();
-    }
-
-    for (final control in outputControls) {
-      if (control.retain) {
-        continue;
-      }
-      buffer
-        ..writeln('    wbPublish(')
-        ..writeln("      '\${_device.name}/${control.mqttName}',")
-        ..writeln(
-          '      WbValueCodec.encode(device.${control.fieldName}, WbControlType.${control.typeEnumName}),',
-        )
-        ..writeln('      retained: ${control.retainedPublish},')
-        ..writeln('    );');
+      buffer.writeln(
+        "    '${control.mqttName}': ${control.retainInitLiteral},",
+      );
     }
 
     buffer
+      ..writeln('  };')
       ..writeln()
-      ..writeln('    device.execute();')
-      ..writeln('  }');
-    buffer.writeln();
+      ..writeln('  @override')
+      ..writeln('  UpdateFieldFn? addUpdateFields() => _updateField;')
+      ..writeln()
+      ..writeln('  bool _updateField(String control, String payload) {')
+      ..writeln('    final device = this as $className;')
+      ..writeln('    switch (control) {');
+
+    for (final control in controls) {
+      final valueKeyword = control.needsMutableValue ? 'var' : 'final';
+      buffer.writeln("      case '${control.mqttName}':");
+      buffer.writeln(
+        '        $valueKeyword value = '
+        'WbValueCodec.decode(payload, WbControlType.${control.typeEnumName}) '
+        'as ${control.dartTypeName};',
+      );
+      _writeValueNormalization(
+        buffer,
+        control,
+        '        ',
+        'value',
+        earlyReturn: 'return true;',
+      );
+      if (control.retain) {
+        buffer
+          ..writeln('        if (device.${control.fieldName} != value) {')
+          ..writeln('          WbHiveStorage.getInstanse().put(')
+          ..writeln("            '\$name.${control.mqttName}',")
+          ..writeln('            value,')
+          ..writeln('          );')
+          ..writeln('        }');
+      }
+      buffer
+        ..writeln('        device.${control.fieldName} = value;')
+        ..writeln('        wbPublish(')
+        ..writeln("          '\$name/${control.mqttName}',")
+        ..writeln(
+          '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
+        )
+        ..writeln('          retained: ${control.retainedPublish},')
+        ..writeln('        );')
+        ..writeln('        return true;');
+    }
+
+    buffer
+      ..writeln('    }')
+      ..writeln('    return false;')
+      ..writeln('  }')
+      ..writeln();
 
     for (final control in outputControls) {
       final setterName = toSetterName(control.fieldName);
@@ -159,7 +171,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         buffer
           ..writeln('    device.${control.fieldName} = normalized;')
           ..writeln('    wbPublish(')
-          ..writeln("      '\${_device.name}/${control.mqttName}',")
+          ..writeln("      '\$name/${control.mqttName}',")
           ..writeln(
             '      WbValueCodec.encode(normalized, WbControlType.${control.typeEnumName}),',
           )
@@ -171,7 +183,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         buffer
           ..writeln('    device.${control.fieldName} = value;')
           ..writeln('    wbPublish(')
-          ..writeln("      '\${_device.name}/${control.mqttName}',")
+          ..writeln("      '\$name/${control.mqttName}',")
           ..writeln(
             '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
           )
@@ -182,65 +194,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       }
     }
 
-    buffer
-      ..writeln('  void updateField(WbMqttMessage mess) {')
-      ..writeln('    final device = this as $className;')
-      ..writeln("    final namePrefix = '\${_device.name}/';")
-      ..writeln('    if (!mess.topic.startsWith(namePrefix)) {')
-      ..writeln('      return;')
-      ..writeln('    }')
-      ..writeln('    switch (mess.topic.substring(namePrefix.length)) {');
-
-    for (final control in controls) {
-      final valueKeyword = control.needsMutableValue ? 'var' : 'final';
-      buffer.writeln("      case '${control.mqttName}/on':");
-      buffer.writeln(
-        '        $valueKeyword value = '
-        'WbValueCodec.decode(mess.payload, WbControlType.${control.typeEnumName}) '
-        'as ${control.dartTypeName};',
-      );
-      _writeValueNormalization(buffer, control, '        ', 'value');
-      if (control.retain) {
-        buffer
-          ..writeln('        if (device.${control.fieldName} != value) {')
-          ..writeln('          WbHiveStorage.getInstanse().put(')
-          ..writeln("            '\${_device.name}.${control.fieldName}',")
-          ..writeln('            value,')
-          ..writeln('          );')
-          ..writeln('        }');
-      }
-      buffer
-        ..writeln('        device.${control.fieldName} = value;')
-        ..writeln('        wbPublish(')
-        ..writeln("          '\${_device.name}/${control.mqttName}',")
-        ..writeln(
-          '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
-        )
-        ..writeln('          retained: ${control.retainedPublish},')
-        ..writeln('        );');
-      buffer.writeln('        return;');
-    }
-
-    buffer
-      ..writeln('    }')
-      ..writeln('  }')
-      ..writeln()
-      ..writeln('  Set<String> inputs() => {');
-
-    for (final control in inputControls) {
-      buffer.writeln("    '\${_device.name}/${control.mqttName}/on',");
-    }
-
-    buffer
-      ..writeln('  };')
-      ..writeln()
-      ..writeln('  Set<String> outputs() => {');
-
-    for (final control in outputControls) {
-      buffer.writeln("    '\${_device.name}/${control.mqttName}/on',");
-    }
-
-    buffer.writeln('  };');
     buffer.writeln('}');
 
     return buffer.toString();
@@ -448,13 +401,16 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     StringBuffer buffer,
     _ControlInfo control,
     String indent,
-    String valueVar,
-  ) {
+    String valueVar, {
+    String earlyReturn = 'return;',
+  }) {
     if (control.enumAllowedKeys != null) {
       final keys = control.enumAllowedKeys!
           .map((key) => "'${_escapeDartString(key)}'")
           .join(', ');
-      buffer.writeln('$indent if (!const {$keys}.contains($valueVar)) return;');
+      buffer.writeln(
+        '$indent if (!const {$keys}.contains($valueVar)) $earlyReturn',
+      );
     }
 
     if (!control.hasNumericNormalization) {

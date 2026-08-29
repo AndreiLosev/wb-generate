@@ -3,14 +3,16 @@ import 'package:wb_sdk/wb_sdk.dart';
 part 'room_light.wb.g.dart';
 
 @VirtualDevice()
-class RoomLight with RoomLightWbMixin implements IDevice {
+base class RoomLight extends IDevice with RoomLightPartMixin {
   RoomLight({
     this.name = 'room_light',
     this.title = const WbLocalizedTitle(
       en: 'Room Light',
       ru: 'Освещение комнаты',
     ),
-  });
+  }) {
+    register(this);
+  }
 
   @override
   final String name;

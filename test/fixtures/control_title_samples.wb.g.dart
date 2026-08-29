@@ -9,10 +9,18 @@
 
 part of 'control_title_samples.dart';
 
-mixin ControlTitleSamplesWbMixin {
-  IDevice get _device => this as IDevice;
+base mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
+  @override
+  Set<String> addInputs() => {
+    '${name}/wall_switch/on',
+    '${name}/kitchen_switch/on',
+  };
 
-  final Map<String, Map<String, dynamic>> controlMetaJson = {
+  @override
+  Set<String> addOutputs() => {};
+
+  @override
+  Map<String, Map<String, dynamic>> addMeta() => {
     'wall_switch': {
       'type': 'switch',
       'title': {'en': 'wall_switch'},
@@ -29,61 +37,36 @@ mixin ControlTitleSamplesWbMixin {
     },
   };
 
-  /// Публикует retained meta, затем значения output-контролов и вызывает execute().
-  void init() {
+  @override
+  Map<String, Object?> addRetains() => {};
+
+  @override
+  UpdateFieldFn? addUpdateFields() => _updateField;
+
+  bool _updateField(String control, String payload) {
     final device = this as ControlTitleSamples;
-
-    wbPublish(
-      '${_device.name}/meta',
-      WbMetaJson.device(_device.title),
-      retained: true,
-    );
-
-    for (final entry in controlMetaJson.entries) {
-      wbPublish(
-        '${_device.name}/${entry.key}/meta',
-        WbControlType.meta(entry.value),
-        retained: true,
-      );
-    }
-
-    device.execute();
-  }
-
-  void updateField(WbMqttMessage mess) {
-    final device = this as ControlTitleSamples;
-    final namePrefix = '${_device.name}/';
-    if (!mess.topic.startsWith(namePrefix)) {
-      return;
-    }
-    switch (mess.topic.substring(namePrefix.length)) {
-      case 'wall_switch/on':
+    switch (control) {
+      case 'wall_switch':
         final value =
-            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+            WbValueCodec.decode(payload, WbControlType.switch_) as bool;
         device.wallSwitch = value;
         wbPublish(
-          '${_device.name}/wall_switch',
+          '${name}/wall_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
         );
-        return;
-      case 'kitchen_switch/on':
+        return true;
+      case 'kitchen_switch':
         final value =
-            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
+            WbValueCodec.decode(payload, WbControlType.switch_) as bool;
         device.kitchenSwitch = value;
         wbPublish(
-          '${_device.name}/kitchen_switch',
+          '${name}/kitchen_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
         );
-        return;
+        return true;
     }
+    return false;
   }
-
-  Set<String> inputs() => {
-    '${_device.name}/wall_switch/on',
-    '${_device.name}/kitchen_switch/on',
-  };
-
-  Set<String> outputs() => {};
 }

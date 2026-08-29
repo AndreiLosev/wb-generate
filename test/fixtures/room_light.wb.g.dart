@@ -9,10 +9,15 @@
 
 part of 'room_light.dart';
 
-mixin RoomLightWbMixin {
-  IDevice get _device => this as IDevice;
+base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
+  @override
+  Set<String> addInputs() => {'${name}/switch_state/on', '${name}/power/on'};
 
-  final Map<String, Map<String, dynamic>> controlMetaJson = {
+  @override
+  Set<String> addOutputs() => {'${name}/lamp/on', '${name}/mode/on'};
+
+  @override
+  Map<String, Map<String, dynamic>> addMeta() => {
     'switch_state': {
       'type': 'switch',
       'title': {'en': 'Switch', 'ru': 'Выключатель'},
@@ -51,47 +56,73 @@ mixin RoomLightWbMixin {
     },
   };
 
-  /// Публикует retained meta, затем значения output-контролов и вызывает execute().
-  void init() {
+  @override
+  Map<String, Object?> addRetains() => {'mode': '0'};
+
+  @override
+  UpdateFieldFn? addUpdateFields() => _updateField;
+
+  bool _updateField(String control, String payload) {
     final device = this as RoomLight;
-
-    wbPublish(
-      '${_device.name}/meta',
-      WbMetaJson.device(_device.title),
-      retained: true,
-    );
-
-    for (final entry in controlMetaJson.entries) {
-      wbPublish(
-        '${_device.name}/${entry.key}/meta',
-        WbControlType.meta(entry.value),
-        retained: true,
-      );
+    switch (control) {
+      case 'switch_state':
+        final value =
+            WbValueCodec.decode(payload, WbControlType.switch_) as bool;
+        device.switchState = value;
+        wbPublish(
+          '${name}/switch_state',
+          WbValueCodec.encode(value, WbControlType.switch_),
+          retained: true,
+        );
+        return true;
+      case 'lamp':
+        final value =
+            WbValueCodec.decode(payload, WbControlType.switch_) as bool;
+        device.lamp = value;
+        wbPublish(
+          '${name}/lamp',
+          WbValueCodec.encode(value, WbControlType.switch_),
+          retained: true,
+        );
+        return true;
+      case 'power':
+        var value = WbValueCodec.decode(payload, WbControlType.value) as double;
+        value = WbNumericBounds.normalizeDouble(
+          value,
+          min: 0.0,
+          max: 5000.0,
+          precision: 0.1,
+        );
+        device.power = value;
+        wbPublish(
+          '${name}/power',
+          WbValueCodec.encode(value, WbControlType.value),
+          retained: true,
+        );
+        return true;
+      case 'mode':
+        final value =
+            WbValueCodec.decode(payload, WbControlType.text) as String;
+        if (!const {'0', '1'}.contains(value)) return true;
+        if (device.mode != value) {
+          WbHiveStorage.getInstanse().put('${name}.mode', value);
+        }
+        device.mode = value;
+        wbPublish(
+          '${name}/mode',
+          WbValueCodec.encode(value, WbControlType.text),
+          retained: true,
+        );
+        return true;
     }
-
-    device.mode =
-        WbHiveStorage.getInstanse().get('${_device.name}.mode', '0') as String;
-
-    wbPublish(
-      '${_device.name}/mode',
-      WbValueCodec.encode(device.mode, WbControlType.text),
-      retained: true,
-    );
-
-    wbPublish(
-      '${_device.name}/lamp',
-      WbValueCodec.encode(device.lamp, WbControlType.switch_),
-      retained: true,
-    );
-
-    device.execute();
+    return false;
   }
 
   void setLamp(bool value) {
     final device = this as RoomLight;
     device.lamp = value;
     wbPublish(
-      '${_device.name}/lamp',
+      '${name}/lamp',
       WbValueCodec.encode(value, WbControlType.switch_),
       retained: true,
     );
@@ -103,79 +134,9 @@ mixin RoomLightWbMixin {
     if (!const {'0', '1'}.contains(normalized)) return;
     device.mode = normalized;
     wbPublish(
-      '${_device.name}/mode',
+      '${name}/mode',
       WbValueCodec.encode(normalized, WbControlType.text),
       retained: true,
     );
   }
-
-  void updateField(WbMqttMessage mess) {
-    final device = this as RoomLight;
-    final namePrefix = '${_device.name}/';
-    if (!mess.topic.startsWith(namePrefix)) {
-      return;
-    }
-    switch (mess.topic.substring(namePrefix.length)) {
-      case 'switch_state/on':
-        final value =
-            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
-        device.switchState = value;
-        wbPublish(
-          '${_device.name}/switch_state',
-          WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
-        );
-        return;
-      case 'lamp/on':
-        final value =
-            WbValueCodec.decode(mess.payload, WbControlType.switch_) as bool;
-        device.lamp = value;
-        wbPublish(
-          '${_device.name}/lamp',
-          WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
-        );
-        return;
-      case 'power/on':
-        var value =
-            WbValueCodec.decode(mess.payload, WbControlType.value) as double;
-        value = WbNumericBounds.normalizeDouble(
-          value,
-          min: 0.0,
-          max: 5000.0,
-          precision: 0.1,
-        );
-        device.power = value;
-        wbPublish(
-          '${_device.name}/power',
-          WbValueCodec.encode(value, WbControlType.value),
-          retained: true,
-        );
-        return;
-      case 'mode/on':
-        final value =
-            WbValueCodec.decode(mess.payload, WbControlType.text) as String;
-        if (!const {'0', '1'}.contains(value)) return;
-        if (device.mode != value) {
-          WbHiveStorage.getInstanse().put('${_device.name}.mode', value);
-        }
-        device.mode = value;
-        wbPublish(
-          '${_device.name}/mode',
-          WbValueCodec.encode(value, WbControlType.text),
-          retained: true,
-        );
-        return;
-    }
-  }
-
-  Set<String> inputs() => {
-    '${_device.name}/switch_state/on',
-    '${_device.name}/power/on',
-  };
-
-  Set<String> outputs() => {
-    '${_device.name}/lamp/on',
-    '${_device.name}/mode/on',
-  };
 }

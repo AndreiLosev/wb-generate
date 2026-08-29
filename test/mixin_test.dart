@@ -7,7 +7,7 @@ import 'support/test_wb_client.dart';
 import 'support/test_wb_storage.dart';
 
 void main() {
-  group('RoomLightWbMixin', () {
+  group('RoomLightPartMixin', () {
     late TestWbClient wbClient;
     late MockWbMqttClient client;
     late TestWbStorage wbStorage;
@@ -30,62 +30,13 @@ void main() {
       device = RoomLight();
     });
 
-    test('init публикует meta устройства и контролов', () {
-      device.init();
-
-      expect(
-        client.publishes,
-        contains(
-          isA<MockPublish>()
-              .having((p) => p.topic, 'topic', 'room_light/meta')
-              .having((p) => p.retained, 'retained', isTrue)
-              .having(
-                (p) => p.payload,
-                'payload',
-                contains('"driver":"vktmotage"'),
-              ),
-        ),
-      );
-
-      expect(
-        client.publishes,
-        contains(
-          isA<MockPublish>().having(
-            (p) => p.topic,
-            'topic',
-            'room_light/lamp/meta',
-          ),
-        ),
-      );
+    test('retains возвращает mqttName и Retain(init)', () {
+      expect(device.retains(), {'mode': '0'});
     });
 
-    test('init вызывает execute', () {
-      device.init();
-
-      expect(device.executeCalled, isTrue);
-    });
-
-    test('init публикует output values', () {
-      device.lamp = true;
-      wbStorage.mock.put('room_light.mode', '1');
-
-      device.init();
-
-      expect(
-        client.publishes.map((publish) => publish.topic),
-        containsAll([
-          'room_light/lamp',
-          'room_light/mode',
-        ]),
-      );
-      expect(
-        client.publishes.map((publish) => publish.topic),
-        isNot(contains('room_light/switch_state')),
-      );
-      expect(
-        client.publishes.map((publish) => publish.topic),
-        isNot(contains('room_light/power')),
-      );
+    test('meta содержит meta контролов', () {
+      expect(device.meta(), contains('lamp'));
+      expect(device.meta()['lamp']?['type'], 'switch');
     });
 
     test('inputs возвращает топики InputControl', () {
@@ -233,29 +184,6 @@ void main() {
               .having((p) => p.payload, 'payload', '15.7'),
         ),
       );
-    });
-
-    test('init восстанавливает @Retain поле из storage', () {
-      wbStorage.mock.put('room_light.mode', '1');
-
-      device.init();
-
-      expect(device.mode, '1');
-      expect(
-        client.publishes,
-        contains(
-          isA<MockPublish>()
-              .having((p) => p.topic, 'topic', 'room_light/mode')
-              .having((p) => p.payload, 'payload', '1')
-              .having((p) => p.retained, 'retained', isTrue),
-        ),
-      );
-    });
-
-    test('init использует Retain(init) если ключа нет в storage', () {
-      device.init();
-
-      expect(device.mode, '0');
     });
 
     test('updateField сохраняет @Retain поле в storage', () {
