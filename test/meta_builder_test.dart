@@ -10,7 +10,7 @@ void main() {
   group('MetaBuilder', () {
     test('собирает meta контрола с опциональными полями', () async {
       final meta = await _controlMeta('lamp');
-      final json = WbControlType.meta(meta);
+      final json = meta.toJson();
       expect(json, contains('"type":"switch"'));
       expect(json, contains('"order":2'));
       expect(json, contains('"title":{"en":"Lamp","ru":"Лампа"}'));
@@ -20,18 +20,21 @@ void main() {
 
     test('включает readonly, hidden, enum и units', () async {
       final meta = await _controlMeta('power');
-      final json = WbControlType.meta(meta);
+      final json = meta.toJson();
       expect(json, contains('"type":"value"'));
       expect(json, contains('"units":"W"'));
       expect(json, contains('"readonly":true'));
       expect(json, contains('"hidden":false'));
-      expect(json, isNot(contains('"enum"')));
+      expect(json, isNot(contains('"enumTitles"')));
     });
 
     test('собирает enumTitles для text-контрола', () async {
       final meta = await _controlMeta('mode');
-      final json = WbControlType.meta(meta);
-      expect(json, contains('"enum":{"0":{"en":"Off","ru":"Выкл"}'));
+      final json = meta.toJson();
+      expect(
+        json,
+        contains('"enumTitles":{"0":{"en":"Off","ru":"Выкл"}'),
+      );
     });
 
     test('использует snake_case поля как en, если title не задан', () async {
@@ -39,7 +42,7 @@ void main() {
         'ControlTitleSamples',
         'wallSwitch',
       );
-      final json = WbControlType.meta(meta);
+      final json = meta.toJson();
 
       expect(json, contains('"title":{"en":"wall_switch"}'));
       expect(json, contains('"order":1'));
@@ -50,7 +53,7 @@ void main() {
         'ControlTitleSamples',
         'kitchenSwitch',
       );
-      final json = WbControlType.meta(meta);
+      final json = meta.toJson();
 
       expect(
         json,
@@ -61,32 +64,43 @@ void main() {
   });
 }
 
-Future<Map<String, dynamic>> _controlMetaFromFixture(
+Future<ControlMeta> _controlMetaFromFixture(
   String className,
   String fieldName,
 ) async {
   final clazz = await resolveFixtureClass(className);
   final field = clazz.getField(fieldName)!;
   final reader = _controlReader(field);
+  final type = _controlType(reader);
   final order = _controlOrder(clazz, fieldName);
 
-  return MetaBuilder.controlMeta(
+  return MetaBuilder.buildControlMeta(
     reader,
     fieldName: field.name,
+    type: type,
     order: order,
   );
 }
 
-Future<Map<String, dynamic>> _controlMeta(String fieldName) async {
+Future<ControlMeta> _controlMeta(String fieldName) async {
   final clazz = await resolveFixtureClass('RoomLight');
   final field = clazz.getField(fieldName)!;
   final reader = _controlReader(field);
+  final type = _controlType(reader);
   final order = _controlOrder(clazz, fieldName);
 
-  return MetaBuilder.controlMeta(
+  return MetaBuilder.buildControlMeta(
     reader,
     fieldName: field.name,
+    type: type,
     order: order,
+  );
+}
+
+WbControlType _controlType(ConstantReader reader) {
+  final mqttType = reader.read('type').peek('mqttValue')!.stringValue;
+  return WbControlType.values.firstWhere(
+    (value) => value.mqttValue == mqttType,
   );
 }
 

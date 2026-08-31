@@ -96,11 +96,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('  };')
       ..writeln()
       ..writeln('  @override')
-      ..writeln('  Map<String, Map<String, dynamic>> addMeta() => {');
+      ..writeln('  Map<String, ControlMeta> addMeta() => {');
 
     for (final control in controls) {
       buffer.writeln(
-        "    '${control.mqttName}': ${MetaBuilder.toDartLiteral(control.controlMeta)},",
+        "    '${control.mqttName}': ${control.controlMetaLiteral},",
       );
     }
 
@@ -273,9 +273,10 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           max: reader.peek('max')?.doubleValue,
           precision: reader.peek('precision')?.doubleValue,
           enumAllowedKeys: _readEnumAllowedKeys(reader),
-          controlMeta: MetaBuilder.controlMeta(
+          controlMetaLiteral: MetaBuilder.toControlMetaLiteral(
             reader,
             fieldName: field.name,
+            typeEnumName: typeEnumName,
             order: order,
           ),
         ),
@@ -459,7 +460,7 @@ class _ControlInfo {
     this.max,
     this.precision,
     this.enumAllowedKeys,
-    required this.controlMeta,
+    required this.controlMetaLiteral,
   });
 
   final _ControlDirection direction;
@@ -474,7 +475,7 @@ class _ControlInfo {
   final double? max;
   final double? precision;
   final List<String>? enumAllowedKeys;
-  final Map<String, dynamic> controlMeta;
+  final String controlMetaLiteral;
 
   bool get hasNumericNormalization {
     if (dartTypeName != 'int' && dartTypeName != 'double') {

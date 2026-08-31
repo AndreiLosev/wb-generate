@@ -25,21 +25,21 @@ mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
   Set<String> addOutputs() => {};
 
   @override
-  Map<String, Map<String, dynamic>> addMeta() => {
-    'wall_switch': {
-      'type': 'switch',
-      'title': {'en': 'wall_switch'},
-      'order': 1,
-      'readonly': false,
-      'hidden': false,
-    },
-    'kitchen_switch': {
-      'type': 'switch',
-      'title': {'en': 'kitchen_switch', 'ru': 'Выключатель'},
-      'order': 2,
-      'readonly': false,
-      'hidden': false,
-    },
+  Map<String, ControlMeta> addMeta() => {
+    'wall_switch': ControlMeta(
+      type: WbControlType.switch_,
+      title: const WbLocalizedTitle(en: 'wall_switch'),
+      order: 1,
+      readonly: false,
+      hidden: false,
+    ),
+    'kitchen_switch': ControlMeta(
+      type: WbControlType.switch_,
+      title: const WbLocalizedTitle(en: 'kitchen_switch', ru: 'Выключатель'),
+      order: 2,
+      readonly: false,
+      hidden: false,
+    ),
   };
 
   @override

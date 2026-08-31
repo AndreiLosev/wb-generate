@@ -25,21 +25,21 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
   Set<String> addOutputs() => {'relay/on'};
 
   @override
-  Map<String, Map<String, dynamic>> addMeta() => {
-    'feedback': {
-      'type': 'wo-switch',
-      'title': {'en': 'feedback'},
-      'order': 1,
-      'readonly': false,
-      'hidden': false,
-    },
-    'relay': {
-      'type': 'wo-switch',
-      'title': {'en': 'relay'},
-      'order': 2,
-      'readonly': false,
-      'hidden': false,
-    },
+  Map<String, ControlMeta> addMeta() => {
+    'feedback': ControlMeta(
+      type: WbControlType.woSwitch,
+      title: const WbLocalizedTitle(en: 'feedback'),
+      order: 1,
+      readonly: false,
+      hidden: false,
+    ),
+    'relay': ControlMeta(
+      type: WbControlType.woSwitch,
+      title: const WbLocalizedTitle(en: 'relay'),
+      order: 2,
+      readonly: false,
+      hidden: false,
+    ),
   };
 
   @override

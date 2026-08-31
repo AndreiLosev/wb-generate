@@ -120,7 +120,7 @@ String mode = '0';
 
 Для `pushbutton` publish выполняется без `retained`.
 
-Поле `driver` в meta устройства всегда `vktmotage`. Поле `order` в meta контрола генерируется автоматически (1, 2, 3, …) по порядку полей в классе. Поля `readonly` и `hidden` всегда присутствуют в meta контрола.
+Поле `driver` в meta устройства всегда `vktmotage`. Поле `order` в meta контрола генерируется автоматически (1, 2, 3, …) по порядку полей в классе. Поле `sender` выставляется оркестратором при публикации. Поля `readonly` и `hidden` всегда присутствуют в meta контрола.
 
 Сгенерированный mixin — `part of` исходного файла, использует `wbPublish` и `WbHiveStorage.getInstanse()`.
 

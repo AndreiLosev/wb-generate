@@ -40,7 +40,7 @@ void main() {
 
     test('meta содержит meta контролов', () {
       expect(device.meta(), contains('lamp'));
-      expect(device.meta()['lamp']?['type'], 'switch');
+      expect(device.meta()['lamp']?.type, WbControlType.switch_);
     });
 
     test('inputs возвращает топики InputControl', () {

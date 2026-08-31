@@ -24,11 +24,43 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
   };
 
   @override
-  Map<String, Map<String, dynamic>> addMeta() => {
-    'switch_state': {'type': 'switch', 'title': {'en': 'Switch', 'ru': 'Выключатель'}, 'order': 1, 'readonly': false, 'hidden': false},
-    'lamp': {'type': 'switch', 'title': {'en': 'Lamp', 'ru': 'Лампа'}, 'order': 2, 'readonly': false, 'hidden': false},
-    'power': {'type': 'value', 'title': {'en': 'Power', 'ru': 'Мощность'}, 'order': 3, 'readonly': true, 'hidden': false, 'units': 'W', 'min': 0.0, 'max': 5000.0, 'precision': 0.1},
-    'mode': {'type': 'text', 'title': {'en': 'Mode', 'ru': 'Режим'}, 'order': 4, 'readonly': false, 'hidden': false, 'enum': {'0': {'en': 'Off', 'ru': 'Выкл'}, '1': {'en': 'On', 'ru': 'Вкл'}}},
+  Map<String, ControlMeta> addMeta() => {
+    'switch_state': ControlMeta(
+      type: WbControlType.switch_,
+      title: const WbLocalizedTitle(en: 'Switch', ru: 'Выключатель'),
+      order: 1,
+      readonly: false,
+      hidden: false,
+    ),
+    'lamp': ControlMeta(
+      type: WbControlType.switch_,
+      title: const WbLocalizedTitle(en: 'Lamp', ru: 'Лампа'),
+      order: 2,
+      readonly: false,
+      hidden: false,
+    ),
+    'power': ControlMeta(
+      type: WbControlType.value,
+      title: const WbLocalizedTitle(en: 'Power', ru: 'Мощность'),
+      order: 3,
+      units: 'W',
+      min: 0,
+      max: 5000,
+      precision: 0.1,
+      readonly: true,
+      hidden: false,
+    ),
+    'mode': ControlMeta(
+      type: WbControlType.text,
+      title: const WbLocalizedTitle(en: 'Mode', ru: 'Режим'),
+      order: 4,
+      readonly: false,
+      hidden: false,
+      enumTitles: {
+        '0': const WbLocalizedTitle(en: 'Off', ru: 'Выкл'),
+        '1': const WbLocalizedTitle(en: 'On', ru: 'Вкл'),
+      },
+    ),
   };
 
   @override
