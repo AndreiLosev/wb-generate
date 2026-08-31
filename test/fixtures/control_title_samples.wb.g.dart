@@ -9,12 +9,17 @@
 
 part of 'control_title_samples.dart';
 
-base mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
+mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
   @override
-  Set<String> addInputs() => {
-    '${name}/wall_switch/on',
-    '${name}/kitchen_switch/on',
-  };
+  late final IDevice device;
+
+  @override
+  void setDevice(IDevice device) {
+    this.device = device;
+  }
+
+  @override
+  Set<String> addInputs() => {'wall_switch/on', 'kitchen_switch/on'};
 
   @override
   Set<String> addOutputs() => {};
@@ -51,7 +56,7 @@ base mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.switch_) as bool;
         device.wallSwitch = value;
         wbPublish(
-          '${name}/wall_switch',
+          '$name/wall_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
         );
@@ -61,7 +66,7 @@ base mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.switch_) as bool;
         device.kitchenSwitch = value;
         wbPublish(
-          '${name}/kitchen_switch',
+          '$name/kitchen_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
         );

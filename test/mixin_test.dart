@@ -34,6 +34,10 @@ void main() {
       expect(device.retains(), {'mode': '0'});
     });
 
+    test('register устанавливает device через setDevice', () {
+      expect((device as PartOfIDevice).device, same(device));
+    });
+
     test('meta содержит meta контролов', () {
       expect(device.meta(), contains('lamp'));
       expect(device.meta()['lamp']?['type'], 'switch');
@@ -43,8 +47,8 @@ void main() {
       expect(
         device.inputs(),
         {
-          'room_light/switch_state/on',
-          'room_light/power/on',
+          'switch_state/on',
+          'power/on',
         },
       );
     });
@@ -53,8 +57,8 @@ void main() {
       expect(
         device.outputs(),
         {
-          'room_light/lamp/on',
-          'room_light/mode/on',
+          'lamp/on',
+          'mode/on',
         },
       );
     });

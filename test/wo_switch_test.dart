@@ -28,14 +28,14 @@ void main() {
     test('inputs для wo-switch возвращает /on топик', () {
       expect(
         device.inputs(),
-        {'wo_switch_device/feedback/on'},
+        {'feedback/on'},
       );
     });
 
     test('outputs для wo-switch возвращает /on топик', () {
       expect(
         device.outputs(),
-        {'wo_switch_device/relay/on'},
+        {'relay/on'},
       );
     });
 

@@ -68,10 +68,18 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln()
       ..writeln('mixin $mixinName on IDevice implements PartOfIDevice {')
       ..writeln('  @override')
+      ..writeln('  late final IDevice device;')
+      ..writeln()
+      ..writeln('  @override')
+      ..writeln('  void setDevice(IDevice device) {')
+      ..writeln('    this.device = device;')
+      ..writeln('  }')
+      ..writeln()
+      ..writeln('  @override')
       ..writeln('  Set<String> addInputs() => {');
 
     for (final control in inputControls) {
-      buffer.writeln("    '\$name/${control.mqttName}/on',");
+      buffer.writeln("    '${control.mqttName}/on',");
     }
 
     buffer
@@ -81,7 +89,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('  Set<String> addOutputs() => {');
 
     for (final control in outputControls) {
-      buffer.writeln("    '\$name/${control.mqttName}/on',");
+      buffer.writeln("    '${control.mqttName}/on',");
     }
 
     buffer

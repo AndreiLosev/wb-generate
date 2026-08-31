@@ -9,12 +9,20 @@
 
 part of 'wo_switch_device.dart';
 
-base mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
+mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
   @override
-  Set<String> addInputs() => {'${name}/feedback/on'};
+  late final IDevice device;
 
   @override
-  Set<String> addOutputs() => {'${name}/relay/on'};
+  void setDevice(IDevice device) {
+    this.device = device;
+  }
+
+  @override
+  Set<String> addInputs() => {'feedback/on'};
+
+  @override
+  Set<String> addOutputs() => {'relay/on'};
 
   @override
   Map<String, Map<String, dynamic>> addMeta() => {
@@ -48,7 +56,7 @@ base mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.woSwitch) as bool;
         device.feedback = value;
         wbPublish(
-          '${name}/feedback',
+          '$name/feedback',
           WbValueCodec.encode(value, WbControlType.woSwitch),
           retained: true,
         );
@@ -58,7 +66,7 @@ base mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.woSwitch) as bool;
         device.relay = value;
         wbPublish(
-          '${name}/relay',
+          '$name/relay',
           WbValueCodec.encode(value, WbControlType.woSwitch),
           retained: true,
         );
@@ -71,7 +79,7 @@ base mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
     final device = this as WoSwitchDevice;
     device.relay = value;
     wbPublish(
-      '${name}/relay',
+      '$name/relay',
       WbValueCodec.encode(value, WbControlType.woSwitch),
       retained: true,
     );

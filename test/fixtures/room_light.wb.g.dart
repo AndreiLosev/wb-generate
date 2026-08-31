@@ -9,12 +9,20 @@
 
 part of 'room_light.dart';
 
-base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
+mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
   @override
-  Set<String> addInputs() => {'${name}/switch_state/on', '${name}/power/on'};
+  late final IDevice device;
 
   @override
-  Set<String> addOutputs() => {'${name}/lamp/on', '${name}/mode/on'};
+  void setDevice(IDevice device) {
+    this.device = device;
+  }
+
+  @override
+  Set<String> addInputs() => {'switch_state/on', 'power/on'};
+
+  @override
+  Set<String> addOutputs() => {'lamp/on', 'mode/on'};
 
   @override
   Map<String, Map<String, dynamic>> addMeta() => {
@@ -70,7 +78,7 @@ base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.switch_) as bool;
         device.switchState = value;
         wbPublish(
-          '${name}/switch_state',
+          '$name/switch_state',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
         );
@@ -80,7 +88,7 @@ base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.switch_) as bool;
         device.lamp = value;
         wbPublish(
-          '${name}/lamp',
+          '$name/lamp',
           WbValueCodec.encode(value, WbControlType.switch_),
           retained: true,
         );
@@ -95,7 +103,7 @@ base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         );
         device.power = value;
         wbPublish(
-          '${name}/power',
+          '$name/power',
           WbValueCodec.encode(value, WbControlType.value),
           retained: true,
         );
@@ -105,11 +113,11 @@ base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
             WbValueCodec.decode(payload, WbControlType.text) as String;
         if (!const {'0', '1'}.contains(value)) return true;
         if (device.mode != value) {
-          WbHiveStorage.getInstanse().put('${name}.mode', value);
+          WbHiveStorage.getInstanse().put('$name.mode', value);
         }
         device.mode = value;
         wbPublish(
-          '${name}/mode',
+          '$name/mode',
           WbValueCodec.encode(value, WbControlType.text),
           retained: true,
         );
@@ -122,7 +130,7 @@ base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
     final device = this as RoomLight;
     device.lamp = value;
     wbPublish(
-      '${name}/lamp',
+      '$name/lamp',
       WbValueCodec.encode(value, WbControlType.switch_),
       retained: true,
     );
@@ -134,7 +142,7 @@ base mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
     if (!const {'0', '1'}.contains(normalized)) return;
     device.mode = normalized;
     wbPublish(
-      '${name}/mode',
+      '$name/mode',
       WbValueCodec.encode(normalized, WbControlType.text),
       retained: true,
     );

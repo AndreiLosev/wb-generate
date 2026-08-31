@@ -4,15 +4,23 @@ part of 'room_light.dart';
 
 mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
   @override
+  late final IDevice device;
+
+  @override
+  void setDevice(IDevice device) {
+    this.device = device;
+  }
+
+  @override
   Set<String> addInputs() => {
-    '$name/switch_state/on',
-    '$name/power/on',
+    'switch_state/on',
+    'power/on',
   };
 
   @override
   Set<String> addOutputs() => {
-    '$name/lamp/on',
-    '$name/mode/on',
+    'lamp/on',
+    'mode/on',
   };
 
   @override
