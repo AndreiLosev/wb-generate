@@ -69,9 +69,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
   };
 
   @override
-  UpdateFieldFn? addUpdateFields() => _updateField;
-
-  bool _updateField(String control, String payload) {
+  bool updateFields(String control, String payload) {
     final device = this as RoomLight;
     switch (control) {
       case 'switch_state':

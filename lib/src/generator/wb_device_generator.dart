@@ -120,9 +120,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('  };')
       ..writeln()
       ..writeln('  @override')
-      ..writeln('  UpdateFieldFn? addUpdateFields() => _updateField;')
-      ..writeln()
-      ..writeln('  bool _updateField(String control, String payload) {')
+      ..writeln('  bool updateFields(String control, String payload) {')
       ..writeln('    final device = this as $className;')
       ..writeln('    switch (control) {');
 

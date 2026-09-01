@@ -46,9 +46,7 @@ mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
   Map<String, Object?> addRetains() => {};
 
   @override
-  UpdateFieldFn? addUpdateFields() => _updateField;
-
-  bool _updateField(String control, String payload) {
+  bool updateFields(String control, String payload) {
     final device = this as ControlTitleSamples;
     switch (control) {
       case 'wall_switch':
