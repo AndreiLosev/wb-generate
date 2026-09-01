@@ -91,7 +91,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         );
         return true;
       case 'power':
-        var value = WbValueCodec.decode(payload, WbControlType.value) as double;
+        var value = WbValueCodec.decodeDoubleValue(payload);
          value = WbNumericBounds.normalizeDouble(value, min: 0.0, max: 5000.0, precision: 0.1);
         device.power = value;
         wbPublish(

@@ -4,7 +4,7 @@ part 'room_light.wb.g.dart';
 
 @VirtualDevice()
 base class RoomLight extends IDevice with RoomLightPartMixin {
-  RoomLight({
+  new({
     this.name = 'room_light',
     this.title = const WbLocalizedTitle(
       en: 'Room Light',

@@ -12,7 +12,7 @@ void main() {
   test('генерирует RoomLightPartMixin', () async {
     final clazz = await resolveFixtureClass('RoomLight');
     final annotation = ConstantReader(
-      const TypeChecker.fromRuntime(
+      const TypeChecker.typeNamed(
         VirtualDevice,
       ).firstAnnotationOfExact(clazz)!,
     );
@@ -33,7 +33,7 @@ void main() {
   test('требует extends IDevice', () async {
     final clazz = await resolveFixtureClass('MissingDevice');
     final annotation = ConstantReader(
-      const TypeChecker.fromRuntime(
+      const TypeChecker.typeNamed(
         VirtualDevice,
       ).firstAnnotationOfExact(clazz)!,
     );

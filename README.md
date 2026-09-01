@@ -14,8 +14,10 @@ dependencies:
 dev_dependencies:
   wb_generate:
     path: ../wb-generate
-  build_runner: ^2.4.15
+  build_runner: ^2.16.0
 ```
+
+Требуется Dart SDK `^3.13.0`. В классах `@VirtualDevice` можно объявлять конструктор через `new({...})` вместо имени класса.
 
 ## Использование
 
@@ -26,7 +28,7 @@ part 'room_light.wb.g.dart';
 
 @VirtualDevice()
 class RoomLight with RoomLightWbMixin implements IDevice {
-  RoomLight({
+  new({
     required this.name,
     this.title,
   });

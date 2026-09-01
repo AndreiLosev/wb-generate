@@ -1,5 +1,5 @@
-// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// dart format width=80
 
 // **************************************************************************
 // WbDeviceGenerator
@@ -92,7 +92,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         );
         return true;
       case 'power':
-        var value = WbValueCodec.decode(payload, WbControlType.value) as double;
+        var value = WbValueCodec.decodeDoubleValue(payload);
         value = WbNumericBounds.normalizeDouble(
           value,
           min: 0.0,

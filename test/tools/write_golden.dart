@@ -10,7 +10,7 @@ import '../support/analysis.dart';
 Future<void> main() async {
   final clazz = await resolveFixtureClass('RoomLight');
   final annotation = ConstantReader(
-    const TypeChecker.fromRuntime(
+    const TypeChecker.typeNamed(
       VirtualDevice,
     ).firstAnnotationOfExact(clazz)!,
   );

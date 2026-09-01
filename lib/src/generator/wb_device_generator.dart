@@ -13,10 +13,10 @@ import 'naming.dart';
 enum _ControlDirection { input, output }
 
 class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
-  static const _inputChecker = TypeChecker.fromRuntime(InputControl);
-  static const _outputChecker = TypeChecker.fromRuntime(OutputControl);
-  static const _retainChecker = TypeChecker.fromRuntime(Retain);
-  static const _iDeviceChecker = TypeChecker.fromRuntime(IDevice);
+  static const _inputChecker = TypeChecker.typeNamed(InputControl);
+  static const _outputChecker = TypeChecker.typeNamed(OutputControl);
+  static const _retainChecker = TypeChecker.typeNamed(Retain);
+  static const _iDeviceChecker = TypeChecker.typeNamed(IDevice);
 
   @override
   FutureOr<String?> generateForAnnotatedElement(
@@ -128,9 +128,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       final valueKeyword = control.needsMutableValue ? 'var' : 'final';
       buffer.writeln("      case '${control.mqttName}':");
       buffer.writeln(
-        '        $valueKeyword value = '
-        'WbValueCodec.decode(payload, WbControlType.${control.typeEnumName}) '
-        'as ${control.dartTypeName};',
+        '        $valueKeyword value = ${control.decodeExpression};',
       );
       _writeValueNormalization(
         buffer,
@@ -210,7 +208,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     var order = 0;
 
     for (final field in classElement.fields) {
-      if (field.isStatic || field.isSynthetic) {
+      if (field.isStatic || !_isDeclaredField(field)) {
         continue;
       }
 
@@ -238,7 +236,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       _validateFieldType(field, dartType, controlType);
 
       final mqttName =
-          reader.peek('name')?.stringValue ?? toSnakeCase(field.name);
+          reader.peek('name')?.stringValue ?? toSnakeCase(field.name!);
 
       if (field.isFinal) {
         throw InvalidGenerationSourceError(
@@ -252,7 +250,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       final retainInitLiteral = retain
           ? _retainInitLiteral(
               ConstantReader(retainAnnotation),
-              dartType.getDisplayString(withNullability: false),
+              dartType.getDisplayString(),
               field,
             )
           : null;
@@ -260,7 +258,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       controls.add(
         _ControlInfo(
           direction: direction,
-          fieldName: field.name,
+          fieldName: field.name!,
           mqttName: mqttName,
           typeEnumName: typeEnumName,
           dartTypeName: dartType.getDisplayString(withNullability: false),
@@ -273,7 +271,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           enumAllowedKeys: _readEnumAllowedKeys(reader),
           controlMetaLiteral: MetaBuilder.toControlMetaLiteral(
             reader,
-            fieldName: field.name,
+            fieldName: field.name!,
             typeEnumName: typeEnumName,
             order: order,
           ),
@@ -286,7 +284,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
 
   void _validateRetainFields(ClassElement classElement) {
     for (final field in classElement.fields) {
-      if (field.isStatic || field.isSynthetic) {
+      if (field.isStatic || !_isDeclaredField(field)) {
         continue;
       }
 
@@ -349,6 +347,10 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     }
   }
 
+  bool _isDeclaredField(FieldElement field) {
+    return identical(field, field.nonSynthetic) && field.name != null;
+  }
+
   _ControlDirection? _controlDirection(FieldElement field) {
     if (_inputChecker.hasAnnotationOfExact(field)) {
       return _ControlDirection.input;
@@ -364,7 +366,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     DartType dartType,
     WbControlType controlType,
   ) {
-    final displayType = dartType.getDisplayString(withNullability: false);
+    final displayType = dartType.getDisplayString();
     final isValid = switch (controlType) {
       WbControlType.switch_ ||
       WbControlType.woSwitch ||
@@ -487,4 +489,19 @@ class _ControlInfo {
       enumAllowedKeys != null || hasNumericNormalization;
 
   bool get needsMutableValue => hasNumericNormalization;
+
+  String get decodeExpression {
+    if (typeEnumName == 'value') {
+      return switch (dartTypeName) {
+        'int' => 'WbValueCodec.decodeIntValue(payload)',
+        'double' => 'WbValueCodec.decodeDoubleValue(payload)',
+        _ => throw StateError(
+          'Unsupported dart type $dartTypeName for WbControlType.value',
+        ),
+      };
+    }
+
+    return 'WbValueCodec.decode(payload, WbControlType.$typeEnumName) '
+        'as $dartTypeName';
+  }
 }

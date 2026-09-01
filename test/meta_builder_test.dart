@@ -25,7 +25,7 @@ void main() {
       expect(json, contains('"units":"W"'));
       expect(json, contains('"readonly":true'));
       expect(json, contains('"hidden":false'));
-      expect(json, isNot(contains('"enumTitles"')));
+      expect(json, isNot(contains('"enum"')));
     });
 
     test('собирает enumTitles для text-контрола', () async {
@@ -33,7 +33,7 @@ void main() {
       final json = meta.toJson();
       expect(
         json,
-        contains('"enumTitles":{"0":{"en":"Off","ru":"Выкл"}'),
+        contains('"enum":{"0":{"en":"Off","ru":"Выкл"}'),
       );
     });
 
@@ -76,7 +76,7 @@ Future<ControlMeta> _controlMetaFromFixture(
 
   return MetaBuilder.buildControlMeta(
     reader,
-    fieldName: field.name,
+    fieldName: field.name!,
     type: type,
     order: order,
   );
@@ -91,7 +91,7 @@ Future<ControlMeta> _controlMeta(String fieldName) async {
 
   return MetaBuilder.buildControlMeta(
     reader,
-    fieldName: field.name,
+    fieldName: field.name!,
     type: type,
     order: order,
   );
@@ -107,7 +107,7 @@ WbControlType _controlType(ConstantReader reader) {
 int _controlOrder(ClassElement clazz, String fieldName) {
   var order = 0;
   for (final field in clazz.fields) {
-    if (field.isStatic || field.isSynthetic) {
+    if (field.isStatic || field.name == null || !identical(field, field.nonSynthetic)) {
       continue;
     }
     if (!_hasControlAnnotation(field)) {
@@ -122,15 +122,15 @@ int _controlOrder(ClassElement clazz, String fieldName) {
 }
 
 bool _hasControlAnnotation(FieldElement field) {
-  const inputChecker = TypeChecker.fromRuntime(InputControl);
-  const outputChecker = TypeChecker.fromRuntime(OutputControl);
+  const inputChecker = TypeChecker.typeNamed(InputControl);
+  const outputChecker = TypeChecker.typeNamed(OutputControl);
   return inputChecker.hasAnnotationOfExact(field) ||
       outputChecker.hasAnnotationOfExact(field);
 }
 
 ConstantReader _controlReader(FieldElement field) {
-  const inputChecker = TypeChecker.fromRuntime(InputControl);
-  const outputChecker = TypeChecker.fromRuntime(OutputControl);
+  const inputChecker = TypeChecker.typeNamed(InputControl);
+  const outputChecker = TypeChecker.typeNamed(OutputControl);
 
   final annotation = inputChecker.firstAnnotationOfExact(field) ??
       outputChecker.firstAnnotationOfExact(field);
