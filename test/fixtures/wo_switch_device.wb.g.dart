@@ -25,6 +25,9 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
   Set<String> addOutputs() => {'relay/on'};
 
   @override
+  Set<String> addDependencies() => {};
+
+  @override
   Map<String, ControlMeta> addMeta() => {
     'feedback': ControlMeta(
       type: WbControlType.woSwitch,

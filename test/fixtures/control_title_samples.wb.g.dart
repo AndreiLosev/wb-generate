@@ -25,6 +25,9 @@ mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
   Set<String> addOutputs() => {};
 
   @override
+  Set<String> addDependencies() => {};
+
+  @override
   Map<String, ControlMeta> addMeta() => {
     'wall_switch': ControlMeta(
       type: WbControlType.switch_,

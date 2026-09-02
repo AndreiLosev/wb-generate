@@ -60,6 +60,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         .where((c) => c.direction == _ControlDirection.output)
         .toList();
     final retainedControls = controls.where((c) => c.retain).toList();
+    final dependencies = annotation
+        .read('dependencies')
+        .listValue
+        .map((e) => e.toStringValue()!)
+        .toList();
 
     final buffer = StringBuffer()
       ..writeln('// GENERATED CODE - DO NOT MODIFY BY HAND')
@@ -74,27 +79,13 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln('  void setDevice(IDevice device) {')
       ..writeln('    this.device = device;')
       ..writeln('  }')
-      ..writeln()
-      ..writeln('  @override')
-      ..writeln('  Set<String> addInputs() => {');
+      ..writeln();
 
-    for (final control in inputControls) {
-      buffer.writeln("    '${control.mqttName}/on',");
-    }
+    _writeControlTopicsOverride(buffer, 'addInputs', inputControls);
+    _writeControlTopicsOverride(buffer, 'addOutputs', outputControls);
+    _writeStringSetOverride(buffer, 'addDependencies', dependencies);
 
     buffer
-      ..writeln('  };')
-      ..writeln()
-      ..writeln('  @override')
-      ..writeln('  Set<String> addOutputs() => {');
-
-    for (final control in outputControls) {
-      buffer.writeln("    '${control.mqttName}/on',");
-    }
-
-    buffer
-      ..writeln('  };')
-      ..writeln()
       ..writeln('  @override')
       ..writeln('  Map<String, ControlMeta> addMeta() => {');
 
@@ -106,19 +97,29 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
 
     buffer
       ..writeln('  };')
-      ..writeln()
-      ..writeln('  @override')
-      ..writeln('  Map<String, Object?> addRetains() => {');
+      ..writeln();
 
-    for (final control in retainedControls) {
-      buffer.writeln(
-        "    '${control.mqttName}': ${control.retainInitLiteral},",
-      );
+    if (retainedControls.isEmpty) {
+      buffer.writeln('  @override');
+      buffer.writeln('  Map<String, Object?> addRetains() => {};');
+      buffer.writeln();
+    } else {
+      buffer
+        ..writeln('  @override')
+        ..writeln('  Map<String, Object?> addRetains() => {');
+
+      for (final control in retainedControls) {
+        buffer.writeln(
+          "    '${control.mqttName}': ${control.retainInitLiteral},",
+        );
+      }
+
+      buffer
+        ..writeln('  };')
+        ..writeln();
     }
 
     buffer
-      ..writeln('  };')
-      ..writeln()
       ..writeln('  @override')
       ..writeln('  bool updateFields(String control, String payload) {')
       ..writeln('    final device = this as $className;')
@@ -404,6 +405,42 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     return enumTitles.mapValue.keys
         .map((key) => key!.toStringValue()!)
         .toList();
+  }
+
+  void _writeControlTopicsOverride(
+    StringBuffer buffer,
+    String methodName,
+    List<_ControlInfo> controls,
+  ) {
+    buffer.writeln('  @override');
+    if (controls.isEmpty) {
+      buffer.writeln('  Set<String> $methodName() => {};');
+    } else {
+      buffer.writeln('  Set<String> $methodName() => {');
+      for (final control in controls) {
+        buffer.writeln("    '${control.mqttName}/on',");
+      }
+      buffer.writeln('  };');
+    }
+    buffer.writeln();
+  }
+
+  void _writeStringSetOverride(
+    StringBuffer buffer,
+    String methodName,
+    List<String> items,
+  ) {
+    buffer.writeln('  @override');
+    if (items.isEmpty) {
+      buffer.writeln('  Set<String> $methodName() => {};');
+    } else {
+      buffer.writeln('  Set<String> $methodName() => {');
+      for (final item in items) {
+        buffer.writeln("    '${_escapeDartString(item)}',");
+      }
+      buffer.writeln('  };');
+    }
+    buffer.writeln();
   }
 
   void _writeValueNormalization(

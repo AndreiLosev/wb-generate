@@ -2,6 +2,7 @@ import 'package:test/test.dart';
 import 'package:wb_sdk/wb_sdk.dart';
 
 import 'fixtures/room_light.dart';
+import 'fixtures/room_light_with_deps.dart';
 import 'support/mock_mqtt_client.dart';
 import 'support/test_wb_client.dart';
 import 'support/test_wb_storage.dart';
@@ -61,6 +62,10 @@ void main() {
           'mode/on',
         },
       );
+    });
+
+    test('dependencies возвращает пустой набор без @VirtualDevice(dependencies)', () {
+      expect(device.dependencies(), isEmpty);
     });
 
     test('setLamp публикует в основной топик и меняет поле', () {
@@ -297,6 +302,20 @@ void main() {
       expect(device.switchState, isFalse);
       expect(device.power, 0);
       expect(device.lamp, isFalse);
+    });
+  });
+
+  group('RoomLightWithDepsPartMixin', () {
+    test('dependencies возвращает топики из @VirtualDevice(dependencies)', () {
+      final device = RoomLightWithDeps();
+
+      expect(
+        device.dependencies(),
+        {
+          'sensor/temp/on',
+          '+/meta',
+        },
+      );
     });
   });
 }

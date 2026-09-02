@@ -24,6 +24,9 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
   };
 
   @override
+  Set<String> addDependencies() => {};
+
+  @override
   Map<String, ControlMeta> addMeta() => {
     'switch_state': ControlMeta(
       type: WbControlType.switch_,

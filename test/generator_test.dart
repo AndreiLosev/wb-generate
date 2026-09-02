@@ -30,6 +30,27 @@ void main() {
     expect(normalizeGenerated(output!), golden);
   });
 
+  test('генерирует addDependencies из @VirtualDevice(dependencies: ...)', () async {
+    final clazz = await resolveFixtureClass('RoomLightWithDeps');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    final output = await generator.generateForAnnotatedElement(
+      clazz,
+      annotation,
+      _FakeBuildStep(path: 'test/fixtures/room_light_with_deps.dart'),
+    );
+
+    final golden = normalizeGenerated(
+      File('test/goldens/room_light_with_deps.core.golden').readAsStringSync(),
+    );
+    expect(normalizeGenerated(output!), golden);
+  });
+
   test('требует extends IDevice', () async {
     final clazz = await resolveFixtureClass('MissingDevice');
     final annotation = ConstantReader(
