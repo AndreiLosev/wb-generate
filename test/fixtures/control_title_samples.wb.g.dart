@@ -59,7 +59,6 @@ mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/wall_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
         );
         return true;
       case 'kitchen_switch':
@@ -69,7 +68,6 @@ mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/kitchen_switch',
           WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
         );
         return true;
     }

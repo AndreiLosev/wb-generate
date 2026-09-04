@@ -55,7 +55,6 @@ mixin RoomLightWithDepsPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/switch_state',
           WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
         );
         return true;
     }

@@ -81,7 +81,6 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/switch_state',
           WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
         );
         return true;
       case 'lamp':
@@ -91,7 +90,6 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/lamp',
           WbValueCodec.encode(value, WbControlType.switch_),
-          retained: true,
         );
         return true;
       case 'power':
@@ -106,7 +104,6 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/power',
           WbValueCodec.encode(value, WbControlType.value),
-          retained: true,
         );
         return true;
       case 'mode':
@@ -120,7 +117,6 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/mode',
           WbValueCodec.encode(value, WbControlType.text),
-          retained: true,
         );
         return true;
     }
@@ -133,7 +129,6 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
     wbPublish(
       '$name/lamp',
       WbValueCodec.encode(value, WbControlType.switch_),
-      retained: true,
     );
   }
 
@@ -145,7 +140,6 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
     wbPublish(
       '$name/mode',
       WbValueCodec.encode(normalized, WbControlType.text),
-      retained: true,
     );
   }
 }

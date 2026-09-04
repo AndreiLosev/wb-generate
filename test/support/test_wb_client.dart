@@ -30,8 +30,8 @@ class TestWbClient extends WbClient {
     final mock = MockWbMqttClient();
     final client = TestWbClient._(broker: broker, mock: mock);
     await client.connect();
-    wbPublish = (topic, payload, {bool retained = true}) {
-      client.publish(topic, payload, retained: retained);
+    wbPublish = (topic, payload) {
+      client.publish(topic, payload, retained: true);
     };
     return client;
   }

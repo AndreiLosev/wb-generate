@@ -51,6 +51,27 @@ void main() {
     expect(normalizeGenerated(output!), golden);
   });
 
+  test('генерирует RangeDevicePartMixin с int и double range', () async {
+    final clazz = await resolveFixtureClass('RangeDevice');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    final output = await generator.generateForAnnotatedElement(
+      clazz,
+      annotation,
+      _FakeBuildStep(path: 'test/fixtures/range_device.dart'),
+    );
+
+    final golden = normalizeGenerated(
+      File('test/goldens/range_device.core.golden').readAsStringSync(),
+    );
+    expect(normalizeGenerated(output!), golden);
+  });
+
   test('требует extends IDevice', () async {
     final clazz = await resolveFixtureClass('MissingDevice');
     final annotation = ConstantReader(

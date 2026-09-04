@@ -59,7 +59,6 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/feedback',
           WbValueCodec.encode(value, WbControlType.woSwitch),
-          retained: true,
         );
         return true;
       case 'relay':
@@ -69,7 +68,6 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
         wbPublish(
           '$name/relay',
           WbValueCodec.encode(value, WbControlType.woSwitch),
-          retained: true,
         );
         return true;
     }
@@ -82,7 +80,6 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
     wbPublish(
       '$name/relay',
       WbValueCodec.encode(value, WbControlType.woSwitch),
-      retained: true,
     );
   }
 }

@@ -154,7 +154,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         ..writeln(
           '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
         )
-        ..writeln('          retained: ${control.retainedPublish},')
         ..writeln('        );')
         ..writeln('        return true;');
     }
@@ -180,7 +179,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           ..writeln(
             '      WbValueCodec.encode(normalized, WbControlType.${control.typeEnumName}),',
           )
-          ..writeln('      retained: ${control.retainedPublish},')
           ..writeln('    );')
           ..writeln('  }')
           ..writeln();
@@ -192,7 +190,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           ..writeln(
             '      WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
           )
-          ..writeln('      retained: ${control.retainedPublish},')
           ..writeln('    );')
           ..writeln('  }')
           ..writeln();
@@ -263,7 +260,6 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           mqttName: mqttName,
           typeEnumName: typeEnumName,
           dartTypeName: dartType.getDisplayString(withNullability: false),
-          retainedPublish: controlType != WbControlType.pushbutton,
           retain: retain,
           retainInitLiteral: retainInitLiteral,
           min: reader.peek('min')?.doubleValue,
@@ -373,9 +369,8 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       WbControlType.woSwitch ||
       WbControlType.alarm ||
       WbControlType.pushbutton => displayType == 'bool',
-      WbControlType.range ||
-      WbControlType.unixtime ||
-      WbControlType.w1Id => displayType == 'int',
+      WbControlType.range => displayType == 'int' || displayType == 'double',
+      WbControlType.unixtime || WbControlType.w1Id => displayType == 'int',
       WbControlType.value => displayType == 'int' || displayType == 'double',
       WbControlType.rgb || WbControlType.text => displayType == 'String',
     };
@@ -490,7 +485,6 @@ class _ControlInfo {
     required this.mqttName,
     required this.typeEnumName,
     required this.dartTypeName,
-    required this.retainedPublish,
     required this.retain,
     this.retainInitLiteral,
     this.min,
@@ -505,7 +499,6 @@ class _ControlInfo {
   final String mqttName;
   final String typeEnumName;
   final String dartTypeName;
-  final bool retainedPublish;
   final bool retain;
   final String? retainInitLiteral;
   final double? min;
@@ -528,12 +521,12 @@ class _ControlInfo {
   bool get needsMutableValue => hasNumericNormalization;
 
   String get decodeExpression {
-    if (typeEnumName == 'value') {
+    if (typeEnumName == 'value' || typeEnumName == 'range') {
       return switch (dartTypeName) {
         'int' => 'WbValueCodec.decodeIntValue(payload)',
         'double' => 'WbValueCodec.decodeDoubleValue(payload)',
         _ => throw StateError(
-          'Unsupported dart type $dartTypeName for WbControlType.value',
+          'Unsupported dart type $dartTypeName for WbControlType.$typeEnumName',
         ),
       };
     }
