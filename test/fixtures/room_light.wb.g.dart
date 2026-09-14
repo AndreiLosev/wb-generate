@@ -114,10 +114,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
           WbHiveStorage.getInstanse().put('$name.mode', value);
         }
         device.mode = value;
-        wbPublish(
-          '$name/mode',
-          WbValueCodec.encode(value, WbControlType.text),
-        );
+        wbPublish('$name/mode', WbValueCodec.encode(value, WbControlType.text));
         return true;
     }
     return false;
@@ -126,10 +123,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
   void setLamp(bool value) {
     final device = this as RoomLight;
     device.lamp = value;
-    wbPublish(
-      '$name/lamp',
-      WbValueCodec.encode(value, WbControlType.switch_),
-    );
+    wbPublish('$name/lamp', WbValueCodec.encode(value, WbControlType.switch_));
   }
 
   void setMode(String value) {

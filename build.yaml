@@ -12,6 +12,7 @@ targets:
         - test/**
       exclude:
         - test/fixtures/missing_idevice.dart
+        - test/fixtures/reverse_input_invalid.dart
 
 builders:
   wb_device:

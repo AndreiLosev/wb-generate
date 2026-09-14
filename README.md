@@ -87,6 +87,10 @@ device.init();
 
 На поле `@InputControl` или `@OutputControl` можно добавить `@Retain(init)` — значение сохраняется между перезапусками драйвера.
 
+### `@InputControl(reverse: true)`
+
+Для входных контролов типов `switch`, `wo-switch` и `alarm`: инверсия MQTT `0`/`1` при обработке `/on`. Payload `1` записывается в поле как `false`, `0` — как `true`. В основной топик `{device}/{control}` публикуется логическое значение поля (обычный `encode`), то есть противоположное тому, что пришло на `/on`. Для `@OutputControl` и других типов параметр не поддерживается.
+
 - Ключ в storage: `{name}.{fieldName}` (имя устройства и имя поля в Dart).
 - `init()` — `WbHiveStorage.getInstanse().get(key, init)` и publish в основной топик `{device}/{control}`.
 - `updateField` — `WbHiveStorage.getInstanse().put(key, value)` только если новое значение отличается от текущего в поле.

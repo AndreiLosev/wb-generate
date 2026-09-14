@@ -25,10 +25,7 @@ mixin RoomLightWithDepsPartMixin on IDevice implements PartOfIDevice {
   Set<String> addOutputs() => {};
 
   @override
-  Set<String> addDependencies() => {
-    'sensor/temp/on',
-    '+/meta',
-  };
+  Set<String> addDependencies() => {'sensor/temp/on', '+/meta'};
 
   @override
   Map<String, ControlMeta> addMeta() => {

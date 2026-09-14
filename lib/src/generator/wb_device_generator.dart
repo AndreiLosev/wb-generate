@@ -138,6 +138,9 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         'value',
         earlyReturn: 'return true;',
       );
+      if (control.applyReverseInUpdateFields) {
+        buffer.writeln('        value = !value;');
+      }
       if (control.retain) {
         buffer
           ..writeln('        if (device.${control.fieldName} != value) {')
@@ -253,6 +256,9 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
             )
           : null;
 
+      final reverse = reader.read('reverse').boolValue;
+      _validateReverse(field, controlType, reverse);
+
       controls.add(
         _ControlInfo(
           direction: direction,
@@ -262,6 +268,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
           dartTypeName: dartType.getDisplayString(withNullability: false),
           retain: retain,
           retainInitLiteral: retainInitLiteral,
+          reverse: reverse,
           min: reader.peek('min')?.doubleValue,
           max: reader.peek('max')?.doubleValue,
           precision: reader.peek('precision')?.doubleValue,
@@ -356,6 +363,31 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       return _ControlDirection.output;
     }
     return null;
+  }
+
+  void _validateReverse(
+    FieldElement field,
+    WbControlType controlType,
+    bool reverse,
+  ) {
+    if (!reverse) {
+      return;
+    }
+
+    final isAllowed = switch (controlType) {
+      WbControlType.switch_ ||
+      WbControlType.woSwitch ||
+      WbControlType.alarm => true,
+      _ => false,
+    };
+
+    if (!isAllowed) {
+      throw InvalidGenerationSourceError(
+        '@InputControl reverse is only supported for switch, wo-switch, and '
+        'alarm on field "${field.name}".',
+        element: field,
+      );
+    }
   }
 
   void _validateFieldType(
@@ -487,6 +519,7 @@ class _ControlInfo {
     required this.dartTypeName,
     required this.retain,
     this.retainInitLiteral,
+    this.reverse = false,
     this.min,
     this.max,
     this.precision,
@@ -501,6 +534,7 @@ class _ControlInfo {
   final String dartTypeName;
   final bool retain;
   final String? retainInitLiteral;
+  final bool reverse;
   final double? min;
   final double? max;
   final double? precision;
@@ -518,7 +552,10 @@ class _ControlInfo {
   bool get hasAnyNormalization =>
       enumAllowedKeys != null || hasNumericNormalization;
 
-  bool get needsMutableValue => hasNumericNormalization;
+  bool get needsMutableValue => hasNumericNormalization || applyReverseInUpdateFields;
+
+  bool get applyReverseInUpdateFields =>
+      direction == _ControlDirection.input && reverse;
 
   String get decodeExpression {
     if (typeEnumName == 'value' || typeEnumName == 'range') {

@@ -72,6 +72,46 @@ void main() {
     expect(normalizeGenerated(output!), golden);
   });
 
+  test('генерирует ReverseInputDevicePartMixin с reverse', () async {
+    final clazz = await resolveFixtureClass('ReverseInputDevice');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    final output = await generator.generateForAnnotatedElement(
+      clazz,
+      annotation,
+      _FakeBuildStep(path: 'test/fixtures/reverse_input_device.dart'),
+    );
+
+    final golden = normalizeGenerated(
+      File('test/goldens/reverse_input_device.core.golden').readAsStringSync(),
+    );
+    expect(normalizeGenerated(output!), golden);
+  });
+
+  test('reverse только для switch, wo-switch и alarm', () async {
+    final clazz = await resolveFixtureClass('ReverseInputInvalid');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    expect(
+      () => generator.generateForAnnotatedElement(
+        clazz,
+        annotation,
+        _FakeBuildStep(path: 'test/fixtures/reverse_input_invalid.dart'),
+      ),
+      throwsA(isA<InvalidGenerationSourceError>()),
+    );
+  });
+
   test('требует extends IDevice', () async {
     final clazz = await resolveFixtureClass('MissingDevice');
     final annotation = ConstantReader(
