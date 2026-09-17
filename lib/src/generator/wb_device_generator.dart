@@ -114,57 +114,59 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       extendsParent: mixinTarget.extendsParent,
     );
 
-    buffer
-      ..writeln('  @override')
-      ..writeln('  bool updateFields(String control, String payload) {')
-      ..writeln('    final device = this as $className;')
-      ..writeln('    switch (control) {');
+    if (!mixinTarget.extendsParent || controls.isNotEmpty) {
+      buffer
+        ..writeln('  @override')
+        ..writeln('  bool updateFields(String control, String payload) {')
+        ..writeln('    final device = this as $className;')
+        ..writeln('    switch (control) {');
 
-    for (final control in controls) {
-      final valueKeyword = control.needsMutableValue ? 'var' : 'final';
-      buffer.writeln("      case '${control.mqttName}':");
-      buffer.writeln(
-        '        $valueKeyword value = ${control.decodeExpression};',
-      );
-      _writeValueNormalization(
-        buffer,
-        control,
-        '        ',
-        'value',
-        earlyReturn: 'return true;',
-      );
-      if (control.applyReverseInUpdateFields) {
-        buffer.writeln('        value = !value;');
-      }
-      if (control.retain) {
+      for (final control in controls) {
+        final valueKeyword = control.needsMutableValue ? 'var' : 'final';
+        buffer.writeln("      case '${control.mqttName}':");
+        buffer.writeln(
+          '        $valueKeyword value = ${control.decodeExpression};',
+        );
+        _writeValueNormalization(
+          buffer,
+          control,
+          '        ',
+          'value',
+          earlyReturn: 'return true;',
+        );
+        if (control.applyReverseInUpdateFields) {
+          buffer.writeln('        value = !value;');
+        }
+        if (control.retain) {
+          buffer
+            ..writeln('        if (device.${control.fieldName} != value) {')
+            ..writeln('          WbHiveStorage.getInstanse().put(')
+            ..writeln("            '\$name.${control.mqttName}',")
+            ..writeln('            value,')
+            ..writeln('          );')
+            ..writeln('        }');
+        }
         buffer
-          ..writeln('        if (device.${control.fieldName} != value) {')
-          ..writeln('          WbHiveStorage.getInstanse().put(')
-          ..writeln("            '\$name.${control.mqttName}',")
-          ..writeln('            value,')
-          ..writeln('          );')
-          ..writeln('        }');
+          ..writeln('        device.${control.fieldName} = value;')
+          ..writeln('        wbPublish(')
+          ..writeln("          '\$name/${control.mqttName}',")
+          ..writeln(
+            '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
+          )
+          ..writeln('        );')
+          ..writeln('        return true;');
+      }
+
+      buffer.writeln('    }');
+      if (mixinTarget.extendsParent) {
+        buffer.writeln('    return super.updateFields(control, payload);');
+      } else {
+        buffer.writeln('    return false;');
       }
       buffer
-        ..writeln('        device.${control.fieldName} = value;')
-        ..writeln('        wbPublish(')
-        ..writeln("          '\$name/${control.mqttName}',")
-        ..writeln(
-          '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
-        )
-        ..writeln('        );')
-        ..writeln('        return true;');
+        ..writeln('  }')
+        ..writeln();
     }
-
-    buffer.writeln('    }');
-    if (mixinTarget.extendsParent) {
-      buffer.writeln('    return super.updateFields(control, payload);');
-    } else {
-      buffer.writeln('    return false;');
-    }
-    buffer
-      ..writeln('  }')
-      ..writeln();
 
     for (final control in outputControls) {
       final setterName = toSetterName(control.fieldName);
@@ -469,13 +471,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     List<_ControlInfo> controls, {
     required bool extendsParent,
   }) {
-    buffer.writeln('  @override');
     if (extendsParent && controls.isEmpty) {
-      buffer.writeln('  Map<String, ControlMeta> addMeta() => super.addMeta();');
-      buffer.writeln();
       return;
     }
 
+    buffer.writeln('  @override');
     if (extendsParent) {
       buffer.writeln('  Map<String, ControlMeta> addMeta() => {');
       buffer.writeln('    ...super.addMeta(),');
@@ -504,15 +504,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     List<_ControlInfo> retainedControls, {
     required bool extendsParent,
   }) {
-    buffer.writeln('  @override');
     if (extendsParent && retainedControls.isEmpty) {
-      buffer.writeln(
-        '  Map<String, Object?> addRetains() => super.addRetains();',
-      );
-      buffer.writeln();
       return;
     }
 
+    buffer.writeln('  @override');
     if (extendsParent) {
       buffer.writeln('  Map<String, Object?> addRetains() => {');
       buffer.writeln('    ...super.addRetains(),');
@@ -548,13 +544,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     List<_ControlInfo> controls, {
     required bool extendsParent,
   }) {
-    buffer.writeln('  @override');
     if (extendsParent && controls.isEmpty) {
-      buffer.writeln('  Set<String> $methodName() => super.$methodName();');
-      buffer.writeln();
       return;
     }
 
+    buffer.writeln('  @override');
     if (extendsParent) {
       buffer.writeln('  Set<String> $methodName() => super.$methodName()');
       buffer.writeln('    ..addAll({');
@@ -584,13 +578,11 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     List<String> items, {
     required bool extendsParent,
   }) {
-    buffer.writeln('  @override');
     if (extendsParent && items.isEmpty) {
-      buffer.writeln('  Set<String> $methodName() => super.$methodName();');
-      buffer.writeln();
       return;
     }
 
+    buffer.writeln('  @override');
     if (extendsParent) {
       buffer.writeln('  Set<String> $methodName() => super.$methodName()');
       buffer.writeln('    ..addAll({');

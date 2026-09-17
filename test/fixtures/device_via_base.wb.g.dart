@@ -66,12 +66,6 @@ mixin DeviceViaBasePartMixin on DeviceBase implements PartOfIDevice {
     });
 
   @override
-  Set<String> addOutputs() => super.addOutputs();
-
-  @override
-  Set<String> addDependencies() => super.addDependencies();
-
-  @override
   Map<String, ControlMeta> addMeta() => {
     ...super.addMeta(),
     'switch_state': ControlMeta(
@@ -82,9 +76,6 @@ mixin DeviceViaBasePartMixin on DeviceBase implements PartOfIDevice {
       hidden: false,
     ),
   };
-
-  @override
-  Map<String, Object?> addRetains() => super.addRetains();
 
   @override
   bool updateFields(String control, String payload) {
