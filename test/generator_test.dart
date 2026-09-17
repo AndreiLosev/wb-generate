@@ -112,6 +112,27 @@ void main() {
     );
   });
 
+  test('генерирует DeviceBasePartMixin на IDevice', () async {
+    final clazz = await resolveFixtureClass('DeviceBase');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    final output = await generator.generateForAnnotatedElement(
+      clazz,
+      annotation,
+      _FakeBuildStep(path: 'test/fixtures/device_via_base.dart'),
+    );
+
+    final golden = normalizeGenerated(
+      File('test/goldens/device_base.core.golden').readAsStringSync(),
+    );
+    expect(normalizeGenerated(output!), golden);
+  });
+
   test('генерирует DeviceViaBasePartMixin через базовый класс', () async {
     final clazz = await resolveFixtureClass('DeviceViaBase');
     final annotation = ConstantReader(
@@ -131,6 +152,25 @@ void main() {
       File('test/goldens/device_via_base.core.golden').readAsStringSync(),
     );
     expect(normalizeGenerated(output!), golden);
+  });
+
+  test('требует @VirtualDevice у родителя при непрямом extends IDevice', () async {
+    final clazz = await resolveFixtureClass('ChildVirtualDevice');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    expect(
+      () => generator.generateForAnnotatedElement(
+        clazz,
+        annotation,
+        _FakeBuildStep(path: 'test/fixtures/device_child_invalid_parent.dart'),
+      ),
+      throwsA(isA<InvalidGenerationSourceError>()),
+    );
   });
 
   test('требует extends IDevice', () async {

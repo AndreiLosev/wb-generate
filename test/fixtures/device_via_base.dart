@@ -2,14 +2,20 @@ import 'package:wb_sdk/wb_sdk.dart';
 
 part 'device_via_base.wb.g.dart';
 
-base class DeviceBase extends IDevice {
-  DeviceBase({required this.name, this.title});
+@VirtualDevice()
+base class DeviceBase extends IDevice with DeviceBasePartMixin {
+  DeviceBase({required this.name, this.title}) {
+    register(this);
+  }
 
   @override
   final String name;
 
   @override
   final WbLocalizedTitle? title;
+
+  @InputControl(type: WbControlType.switch_)
+  bool baseSwitch = false;
 
   @override
   void execute() {}

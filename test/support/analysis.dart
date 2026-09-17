@@ -24,6 +24,9 @@ Future<ClassElement> resolveFixtureClass(String className) async {
       p.join(root, 'test', 'fixtures', 'reverse_input_invalid.dart'),
     'DeviceViaBase' =>
       p.join(root, 'test', 'fixtures', 'device_via_base.dart'),
+    'DeviceBase' => p.join(root, 'test', 'fixtures', 'device_via_base.dart'),
+    'ChildVirtualDevice' =>
+      p.join(root, 'test', 'fixtures', 'device_child_invalid_parent.dart'),
     _ => throw ArgumentError('Unknown fixture class: $className'),
   };
   final collection = AnalysisContextCollection(

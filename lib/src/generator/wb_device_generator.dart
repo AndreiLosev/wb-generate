@@ -17,6 +17,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
   static const _outputChecker = TypeChecker.typeNamed(OutputControl);
   static const _retainChecker = TypeChecker.typeNamed(Retain);
   static const _iDeviceChecker = TypeChecker.typeNamed(IDevice);
+  static const _virtualDeviceChecker = TypeChecker.typeNamed(VirtualDevice);
 
   @override
   FutureOr<String?> generateForAnnotatedElement(
@@ -51,6 +52,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     final className = element.name;
     final mixinName = '${className}PartMixin';
     final importPath = p.basename(buildStep.inputId.path);
+    final mixinTarget = _resolvePartMixinTarget(element);
 
     final inputControls = controls
         .where((c) => c.direction == _ControlDirection.input)
@@ -70,53 +72,47 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       ..writeln()
       ..writeln("part of '$importPath';")
       ..writeln()
-      ..writeln('mixin $mixinName on IDevice implements PartOfIDevice {')
-      ..writeln('  @override')
-      ..writeln('  late final IDevice device;')
-      ..writeln()
-      ..writeln('  @override')
-      ..writeln('  void setDevice(IDevice device) {')
-      ..writeln('    this.device = device;')
-      ..writeln('  }')
-      ..writeln();
-
-    _writeControlTopicsOverride(buffer, 'addInputs', inputControls);
-    _writeControlTopicsOverride(buffer, 'addOutputs', outputControls);
-    _writeStringSetOverride(buffer, 'addDependencies', dependencies);
-
-    buffer
-      ..writeln('  @override')
-      ..writeln('  Map<String, ControlMeta> addMeta() => {');
-
-    for (final control in controls) {
-      buffer.writeln(
-        "    '${control.mqttName}': ${control.controlMetaLiteral},",
+      ..writeln(
+        'mixin $mixinName on ${mixinTarget.mixinOnType} implements PartOfIDevice {',
       );
-    }
 
-    buffer
-      ..writeln('  };')
-      ..writeln();
-
-    if (retainedControls.isEmpty) {
-      buffer.writeln('  @override');
-      buffer.writeln('  Map<String, Object?> addRetains() => {};');
-      buffer.writeln();
-    } else {
+    if (mixinTarget.directOnIDevice) {
       buffer
         ..writeln('  @override')
-        ..writeln('  Map<String, Object?> addRetains() => {');
-
-      for (final control in retainedControls) {
-        buffer.writeln(
-          "    '${control.mqttName}': ${control.retainInitLiteral},",
-        );
-      }
-
-      buffer
-        ..writeln('  };')
+        ..writeln('  late final IDevice device;')
+        ..writeln()
+        ..writeln('  @override')
+        ..writeln('  void setDevice(IDevice device) {')
+        ..writeln('    this.device = device;')
+        ..writeln('  }')
         ..writeln();
     }
+
+    _writeControlTopicsOverride(
+      buffer,
+      'addInputs',
+      inputControls,
+      extendsParent: mixinTarget.extendsParent,
+    );
+    _writeControlTopicsOverride(
+      buffer,
+      'addOutputs',
+      outputControls,
+      extendsParent: mixinTarget.extendsParent,
+    );
+    _writeStringSetOverride(
+      buffer,
+      'addDependencies',
+      dependencies,
+      extendsParent: mixinTarget.extendsParent,
+    );
+
+    _writeAddMetaOverride(buffer, controls, extendsParent: mixinTarget.extendsParent);
+    _writeAddRetainsOverride(
+      buffer,
+      retainedControls,
+      extendsParent: mixinTarget.extendsParent,
+    );
 
     buffer
       ..writeln('  @override')
@@ -160,9 +156,13 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         ..writeln('        return true;');
     }
 
+    buffer.writeln('    }');
+    if (mixinTarget.extendsParent) {
+      buffer.writeln('    return super.updateFields(control, payload);');
+    } else {
+      buffer.writeln('    return false;');
+    }
     buffer
-      ..writeln('    }')
-      ..writeln('    return false;')
       ..writeln('  }')
       ..writeln();
 
@@ -433,12 +433,139 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         .toList();
   }
 
+  _PartMixinTarget _resolvePartMixinTarget(ClassElement element) {
+    final supertype = element.supertype;
+    if (supertype == null || _iDeviceChecker.isExactlyType(supertype)) {
+      return const _PartMixinTarget(
+        directOnIDevice: true,
+        mixinOnType: 'IDevice',
+      );
+    }
+
+    final parentElement = supertype.element;
+    if (parentElement is! ClassElement) {
+      throw InvalidGenerationSourceError(
+        '@VirtualDevice class must extend a class.',
+        element: element,
+      );
+    }
+
+    if (!_virtualDeviceChecker.hasAnnotationOfExact(parentElement)) {
+      throw InvalidGenerationSourceError(
+        '@VirtualDevice on a class that does not directly extend IDevice '
+        'requires the immediate superclass to be annotated with @VirtualDevice.',
+        element: element,
+      );
+    }
+
+    return _PartMixinTarget(
+      directOnIDevice: false,
+      mixinOnType: supertype.getDisplayString(withNullability: false),
+    );
+  }
+
+  void _writeAddMetaOverride(
+    StringBuffer buffer,
+    List<_ControlInfo> controls, {
+    required bool extendsParent,
+  }) {
+    buffer.writeln('  @override');
+    if (extendsParent && controls.isEmpty) {
+      buffer.writeln('  Map<String, ControlMeta> addMeta() => super.addMeta();');
+      buffer.writeln();
+      return;
+    }
+
+    if (extendsParent) {
+      buffer.writeln('  Map<String, ControlMeta> addMeta() => {');
+      buffer.writeln('    ...super.addMeta(),');
+      for (final control in controls) {
+        buffer.writeln(
+          "    '${control.mqttName}': ${control.controlMetaLiteral},",
+        );
+      }
+      buffer.writeln('  };');
+      buffer.writeln();
+      return;
+    }
+
+    buffer.writeln('  Map<String, ControlMeta> addMeta() => {');
+    for (final control in controls) {
+      buffer.writeln(
+        "    '${control.mqttName}': ${control.controlMetaLiteral},",
+      );
+    }
+    buffer.writeln('  };');
+    buffer.writeln();
+  }
+
+  void _writeAddRetainsOverride(
+    StringBuffer buffer,
+    List<_ControlInfo> retainedControls, {
+    required bool extendsParent,
+  }) {
+    buffer.writeln('  @override');
+    if (extendsParent && retainedControls.isEmpty) {
+      buffer.writeln(
+        '  Map<String, Object?> addRetains() => super.addRetains();',
+      );
+      buffer.writeln();
+      return;
+    }
+
+    if (extendsParent) {
+      buffer.writeln('  Map<String, Object?> addRetains() => {');
+      buffer.writeln('    ...super.addRetains(),');
+      for (final control in retainedControls) {
+        buffer.writeln(
+          "    '${control.mqttName}': ${control.retainInitLiteral},",
+        );
+      }
+      buffer.writeln('  };');
+      buffer.writeln();
+      return;
+    }
+
+    if (retainedControls.isEmpty) {
+      buffer.writeln('  Map<String, Object?> addRetains() => {};');
+      buffer.writeln();
+      return;
+    }
+
+    buffer.writeln('  Map<String, Object?> addRetains() => {');
+    for (final control in retainedControls) {
+      buffer.writeln(
+        "    '${control.mqttName}': ${control.retainInitLiteral},",
+      );
+    }
+    buffer.writeln('  };');
+    buffer.writeln();
+  }
+
   void _writeControlTopicsOverride(
     StringBuffer buffer,
     String methodName,
-    List<_ControlInfo> controls,
-  ) {
+    List<_ControlInfo> controls, {
+    required bool extendsParent,
+  }) {
     buffer.writeln('  @override');
+    if (extendsParent && controls.isEmpty) {
+      buffer.writeln('  Set<String> $methodName() => super.$methodName();');
+      buffer.writeln();
+      return;
+    }
+
+    if (extendsParent) {
+      buffer.writeln('  Set<String> $methodName() => super.$methodName()');
+      buffer.writeln('    ..addAll({');
+      for (final control in controls) {
+        buffer.writeln("      '${control.mqttName}/on',");
+      }
+      buffer.writeln('    });');
+      buffer.writeln();
+      return;
+    }
+
     if (controls.isEmpty) {
       buffer.writeln('  Set<String> $methodName() => {};');
     } else {
@@ -454,9 +581,27 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
   void _writeStringSetOverride(
     StringBuffer buffer,
     String methodName,
-    List<String> items,
-  ) {
+    List<String> items, {
+    required bool extendsParent,
+  }) {
     buffer.writeln('  @override');
+    if (extendsParent && items.isEmpty) {
+      buffer.writeln('  Set<String> $methodName() => super.$methodName();');
+      buffer.writeln();
+      return;
+    }
+
+    if (extendsParent) {
+      buffer.writeln('  Set<String> $methodName() => super.$methodName()');
+      buffer.writeln('    ..addAll({');
+      for (final item in items) {
+        buffer.writeln("      '${_escapeDartString(item)}',");
+      }
+      buffer.writeln('    });');
+      buffer.writeln();
+      return;
+    }
+
     if (items.isEmpty) {
       buffer.writeln('  Set<String> $methodName() => {};');
     } else {
@@ -507,6 +652,18 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       '$indent $valueVar = WbNumericBounds.$method($valueVar, ${params.join(', ')});',
     );
   }
+}
+
+class _PartMixinTarget {
+  const _PartMixinTarget({
+    required this.directOnIDevice,
+    required this.mixinOnType,
+  });
+
+  final bool directOnIDevice;
+  final String mixinOnType;
+
+  bool get extendsParent => !directOnIDevice;
 }
 
 class _ControlInfo {
