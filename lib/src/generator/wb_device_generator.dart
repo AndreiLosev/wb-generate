@@ -31,10 +31,9 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       );
     }
 
-    final supertype = element.supertype;
-    if (supertype == null || !_iDeviceChecker.isExactlyType(supertype)) {
+    if (!_iDeviceChecker.isAssignableFromType(element.thisType)) {
       throw InvalidGenerationSourceError(
-        '@VirtualDevice class must extend IDevice.',
+        '@VirtualDevice class must be a subtype of IDevice.',
         element: element,
       );
     }

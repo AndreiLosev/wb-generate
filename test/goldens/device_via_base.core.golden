@@ -1,0 +1,55 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'device_via_base.dart';
+
+mixin DeviceViaBasePartMixin on IDevice implements PartOfIDevice {
+  @override
+  late final IDevice device;
+
+  @override
+  void setDevice(IDevice device) {
+    this.device = device;
+  }
+
+  @override
+  Set<String> addInputs() => {
+    'switch_state/on',
+  };
+
+  @override
+  Set<String> addOutputs() => {};
+
+  @override
+  Set<String> addDependencies() => {};
+
+  @override
+  Map<String, ControlMeta> addMeta() => {
+    'switch_state': ControlMeta(
+      type: WbControlType.switch_,
+      title: const WbLocalizedTitle(en: 'switch_state'),
+      order: 1,
+      readonly: false,
+      hidden: false,
+    ),
+  };
+
+  @override
+  Map<String, Object?> addRetains() => {};
+
+  @override
+  bool updateFields(String control, String payload) {
+    final device = this as DeviceViaBase;
+    switch (control) {
+      case 'switch_state':
+        final value = WbValueCodec.decode(payload, WbControlType.switch_) as bool;
+        device.switchState = value;
+        wbPublish(
+          '$name/switch_state',
+          WbValueCodec.encode(value, WbControlType.switch_),
+        );
+        return true;
+    }
+    return false;
+  }
+
+}

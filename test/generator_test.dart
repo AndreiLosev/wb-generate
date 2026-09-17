@@ -112,6 +112,27 @@ void main() {
     );
   });
 
+  test('генерирует DeviceViaBasePartMixin через базовый класс', () async {
+    final clazz = await resolveFixtureClass('DeviceViaBase');
+    final annotation = ConstantReader(
+      const TypeChecker.typeNamed(
+        VirtualDevice,
+      ).firstAnnotationOfExact(clazz)!,
+    );
+
+    final generator = WbDeviceGenerator();
+    final output = await generator.generateForAnnotatedElement(
+      clazz,
+      annotation,
+      _FakeBuildStep(path: 'test/fixtures/device_via_base.dart'),
+    );
+
+    final golden = normalizeGenerated(
+      File('test/goldens/device_via_base.core.golden').readAsStringSync(),
+    );
+    expect(normalizeGenerated(output!), golden);
+  });
+
   test('требует extends IDevice', () async {
     final clazz = await resolveFixtureClass('MissingDevice');
     final annotation = ConstantReader(
