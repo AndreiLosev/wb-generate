@@ -64,11 +64,7 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
       case 'relay':
         final value =
             WbValueCodec.decode(payload, WbControlType.woSwitch) as bool;
-        device.relay = value;
-        wbPublish(
-          '$name/relay',
-          WbValueCodec.encode(value, WbControlType.woSwitch),
-        );
+        setRelay(value);
         return true;
     }
     return false;

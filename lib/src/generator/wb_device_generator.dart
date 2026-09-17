@@ -122,39 +122,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         ..writeln('    switch (control) {');
 
       for (final control in controls) {
-        final valueKeyword = control.needsMutableValue ? 'var' : 'final';
-        buffer.writeln("      case '${control.mqttName}':");
-        buffer.writeln(
-          '        $valueKeyword value = ${control.decodeExpression};',
-        );
-        _writeValueNormalization(
-          buffer,
-          control,
-          '        ',
-          'value',
-          earlyReturn: 'return true;',
-        );
-        if (control.applyReverseInUpdateFields) {
-          buffer.writeln('        value = !value;');
-        }
-        if (control.retain) {
-          buffer
-            ..writeln('        if (device.${control.fieldName} != value) {')
-            ..writeln('          WbHiveStorage.getInstanse().put(')
-            ..writeln("            '\$name.${control.mqttName}',")
-            ..writeln('            value,')
-            ..writeln('          );')
-            ..writeln('        }');
-        }
-        buffer
-          ..writeln('        device.${control.fieldName} = value;')
-          ..writeln('        wbPublish(')
-          ..writeln("          '\$name/${control.mqttName}',")
-          ..writeln(
-            '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
-          )
-          ..writeln('        );')
-          ..writeln('        return true;');
+        _writeUpdateFieldsCase(buffer, control, className!);
       }
 
       buffer.writeln('    }');
@@ -606,12 +574,78 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
     buffer.writeln();
   }
 
+  void _writeUpdateFieldsCase(
+    StringBuffer buffer,
+    _ControlInfo control,
+    String className,
+  ) {
+    final valueKeyword = control.direction == _ControlDirection.output
+        ? 'final'
+        : (control.needsMutableValue ? 'var' : 'final');
+    buffer.writeln("      case '${control.mqttName}':");
+    buffer.writeln('        $valueKeyword value = ${control.decodeExpression};');
+
+    if (control.direction == _ControlDirection.output) {
+      _writeValueNormalization(
+        buffer,
+        control,
+        '        ',
+        'value',
+        earlyReturn: 'return true;',
+        numericNormalization: false,
+      );
+      if (control.retain) {
+        buffer
+          ..writeln('        if (device.${control.fieldName} != value) {')
+          ..writeln('          WbHiveStorage.getInstanse().put(')
+          ..writeln("            '\$name.${control.mqttName}',")
+          ..writeln('            value,')
+          ..writeln('          );')
+          ..writeln('        }');
+      }
+      buffer
+        ..writeln('        ${toSetterName(control.fieldName)}(value);')
+        ..writeln('        return true;');
+      return;
+    }
+
+    _writeValueNormalization(
+      buffer,
+      control,
+      '        ',
+      'value',
+      earlyReturn: 'return true;',
+    );
+    if (control.applyReverseInUpdateFields) {
+      buffer.writeln('        value = !value;');
+    }
+    if (control.retain) {
+      buffer
+        ..writeln('        if (device.${control.fieldName} != value) {')
+        ..writeln('          WbHiveStorage.getInstanse().put(')
+        ..writeln("            '\$name.${control.mqttName}',")
+        ..writeln('            value,')
+        ..writeln('          );')
+        ..writeln('        }');
+    }
+    buffer
+      ..writeln('        device.${control.fieldName} = value;')
+      ..writeln('        wbPublish(')
+      ..writeln("          '\$name/${control.mqttName}',")
+      ..writeln(
+        '          WbValueCodec.encode(value, WbControlType.${control.typeEnumName}),',
+      )
+      ..writeln('        );')
+      ..writeln('        return true;');
+  }
+
   void _writeValueNormalization(
     StringBuffer buffer,
     _ControlInfo control,
     String indent,
     String valueVar, {
     String earlyReturn = 'return;',
+    bool numericNormalization = true,
   }) {
     if (control.enumAllowedKeys != null) {
       final keys = control.enumAllowedKeys!
@@ -622,7 +656,7 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
       );
     }
 
-    if (!control.hasNumericNormalization) {
+    if (!numericNormalization || !control.hasNumericNormalization) {
       return;
     }
 

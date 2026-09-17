@@ -85,11 +85,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
         return true;
       case 'lamp':
         final value = WbValueCodec.decode(payload, WbControlType.switch_) as bool;
-        device.lamp = value;
-        wbPublish(
-          '$name/lamp',
-          WbValueCodec.encode(value, WbControlType.switch_),
-        );
+        setLamp(value);
         return true;
       case 'power':
         var value = WbValueCodec.decodeDoubleValue(payload);
@@ -109,11 +105,7 @@ mixin RoomLightPartMixin on IDevice implements PartOfIDevice {
             value,
           );
         }
-        device.mode = value;
-        wbPublish(
-          '$name/mode',
-          WbValueCodec.encode(value, WbControlType.text),
-        );
+        setMode(value);
         return true;
     }
     return false;
