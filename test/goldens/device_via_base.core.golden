@@ -3,6 +3,9 @@
 part of 'device_via_base.dart';
 
 mixin DeviceViaBasePartMixin on DeviceBase implements PartOfIDevice {
+  String get switchStateControl =>
+      '$name/switch_state';
+
   @override
   Set<String> addInputs() => super.addInputs()
     ..addAll({

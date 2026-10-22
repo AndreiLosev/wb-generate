@@ -57,7 +57,7 @@ base class RoomLight extends IDevice with RoomLightPartMixin {
   String mode = '0';
 
   @override
-  void execute() {
+  void execute([String? topic]) {
     executeCalled = true;
   }
 }

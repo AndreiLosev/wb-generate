@@ -18,6 +18,10 @@ mixin RangeDevicePartMixin on IDevice implements PartOfIDevice {
     this.device = device;
   }
 
+  String get brightnessControl => '$name/brightness';
+
+  String get levelControl => '$name/level';
+
   @override
   Set<String> addInputs() => {'brightness/on', 'level/on'};
 

@@ -88,6 +88,13 @@ class WbDeviceGenerator extends GeneratorForAnnotation<VirtualDevice> {
         ..writeln();
     }
 
+    for (final control in controls) {
+      buffer
+        ..writeln('  String get ${toControlGetterName(control.fieldName)} =>')
+        ..writeln("      '\$name/${control.mqttName}';")
+        ..writeln();
+    }
+
     _writeControlTopicsOverride(
       buffer,
       'addInputs',

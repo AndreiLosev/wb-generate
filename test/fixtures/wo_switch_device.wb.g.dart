@@ -18,6 +18,10 @@ mixin WoSwitchDevicePartMixin on IDevice implements PartOfIDevice {
     this.device = device;
   }
 
+  String get feedbackControl => '$name/feedback';
+
+  String get relayControl => '$name/relay';
+
   @override
   Set<String> addInputs() => {'feedback/on'};
 

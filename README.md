@@ -80,6 +80,7 @@ device.init();
 | `init()` | восстановление `@Retain` из `WbStorage`, retained-публикация meta устройства, meta всех контролов и текущих значений `@OutputControl` через `set<Field>` |
 | `inputs()` | топики подписки `@InputControl`: `{control}/on` (роутер добавляет `{device}/`) |
 | `outputs()` | топики подписки `@OutputControl`: `{control}/on` (роутер добавляет `{device}/`) |
+| `lampControl` | короткий топик основного контрола: `{device}/{control}` (runtime: `'$name/lamp'`) |
 | `setLamp(value)` | записывает значение в поле и MQTT publish в основной топик `{device}/{control}` |
 | `updateField(mess)` | по `mess.topic` (`.../on`) находит контрол, декодирует `mess.payload`, нормализует значение, записывает в поле, публикует в основной топик `{device}/{control}` и для `@Retain` сохраняет в `WbStorage` |
 

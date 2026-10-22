@@ -1,5 +1,11 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
+// **************************************************************************
+// WbDeviceGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'device_via_base.dart';
 
 mixin DeviceBasePartMixin on IDevice implements PartOfIDevice {
@@ -10,6 +16,9 @@ mixin DeviceBasePartMixin on IDevice implements PartOfIDevice {
   void setDevice(IDevice device) {
     this.device = device;
   }
+
+  String get baseSwitchControl =>
+      '$name/base_switch';
 
   @override
   Set<String> addInputs() => {
@@ -54,11 +63,10 @@ mixin DeviceBasePartMixin on IDevice implements PartOfIDevice {
 
 }
 
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'device_via_base.dart';
-
 mixin DeviceViaBasePartMixin on DeviceBase implements PartOfIDevice {
+  String get switchStateControl =>
+      '$name/switch_state';
+
   @override
   Set<String> addInputs() => super.addInputs()
     ..addAll({
@@ -94,4 +102,3 @@ mixin DeviceViaBasePartMixin on DeviceBase implements PartOfIDevice {
   }
 
 }
-

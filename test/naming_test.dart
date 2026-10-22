@@ -21,6 +21,14 @@ void main() {
     });
   });
 
+  group('toControlGetterName', () {
+    test('добавляет суффикс Control', () {
+      expect(toControlGetterName('run'), 'runControl');
+      expect(toControlGetterName('lamp'), 'lampControl');
+      expect(toControlGetterName('switchState'), 'switchStateControl');
+    });
+  });
+
   group('toCamelCase', () {
     test('преобразует snake_case в camelCase', () {
       expect(toCamelCase('client_id'), 'clientId');

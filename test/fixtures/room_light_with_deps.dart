@@ -27,5 +27,5 @@ base class RoomLightWithDeps extends IDevice with RoomLightWithDepsPartMixin {
   bool switchState = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

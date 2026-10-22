@@ -13,7 +13,7 @@ base class ChildVirtualDevice extends PlainDeviceBase {
   bool switchState = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }
 
 base class PlainDeviceBase extends IDevice {
@@ -26,5 +26,5 @@ base class PlainDeviceBase extends IDevice {
   WbLocalizedTitle? get title => null;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

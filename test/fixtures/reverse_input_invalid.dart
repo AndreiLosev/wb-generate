@@ -18,5 +18,5 @@ base class ReverseInputInvalid extends IDevice with ReverseInputInvalidPartMixin
   bool button = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

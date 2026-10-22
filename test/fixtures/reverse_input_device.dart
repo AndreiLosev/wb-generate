@@ -21,5 +21,5 @@ base class ReverseInputDevice extends IDevice with ReverseInputDevicePartMixin {
   bool feedback = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

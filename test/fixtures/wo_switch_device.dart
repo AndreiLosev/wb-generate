@@ -24,5 +24,5 @@ base class WoSwitchDevice extends IDevice with WoSwitchDevicePartMixin {
   bool relay = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

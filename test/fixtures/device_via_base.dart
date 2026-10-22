@@ -18,7 +18,7 @@ base class DeviceBase extends IDevice with DeviceBasePartMixin {
   bool baseSwitch = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }
 
 @VirtualDevice()

@@ -35,5 +35,5 @@ base class RangeDevice extends IDevice with RangeDevicePartMixin {
   double level = 0;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

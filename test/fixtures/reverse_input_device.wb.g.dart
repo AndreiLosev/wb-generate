@@ -18,6 +18,8 @@ mixin ReverseInputDevicePartMixin on IDevice implements PartOfIDevice {
     this.device = device;
   }
 
+  String get feedbackControl => '$name/feedback';
+
   @override
   Set<String> addInputs() => {'feedback/on'};
 

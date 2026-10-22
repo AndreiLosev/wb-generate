@@ -18,6 +18,8 @@ mixin RoomLightWithDepsPartMixin on IDevice implements PartOfIDevice {
     this.device = device;
   }
 
+  String get switchStateControl => '$name/switch_state';
+
   @override
   Set<String> addInputs() => {'switch_state/on'};
 

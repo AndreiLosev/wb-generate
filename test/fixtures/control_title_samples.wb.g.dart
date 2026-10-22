@@ -18,6 +18,10 @@ mixin ControlTitleSamplesPartMixin on IDevice implements PartOfIDevice {
     this.device = device;
   }
 
+  String get wallSwitchControl => '$name/wall_switch';
+
+  String get kitchenSwitchControl => '$name/kitchen_switch';
+
   @override
   Set<String> addInputs() => {'wall_switch/on', 'kitchen_switch/on'};
 

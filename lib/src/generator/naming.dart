@@ -20,6 +20,9 @@ String toSnakeCase(String input) {
 String toSetterName(String fieldName) =>
     'set${fieldName[0].toUpperCase()}${fieldName.substring(1)}';
 
+/// Имя геттера топика контрола: `lamp` → `lampControl`.
+String toControlGetterName(String fieldName) => '${fieldName}Control';
+
 /// Преобразует snake_case (YAML) в camelCase (Dart): `client_id` → `clientId`.
 String toCamelCase(String snakeCase) {
   final parts = snakeCase.split('_');

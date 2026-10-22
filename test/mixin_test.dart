@@ -44,6 +44,13 @@ void main() {
       expect(device.meta()['lamp']?.type, WbControlType.switch_);
     });
 
+    test('control getters возвращают короткий топик device/control', () {
+      expect(device.switchStateControl, 'room_light/switch_state');
+      expect(device.lampControl, 'room_light/lamp');
+      expect(device.powerControl, 'room_light/power');
+      expect(device.modeControl, 'room_light/mode');
+    });
+
     test('inputs возвращает топики InputControl', () {
       expect(
         device.inputs(),

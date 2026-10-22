@@ -27,5 +27,5 @@ base class ControlTitleSamples extends IDevice with ControlTitleSamplesPartMixin
   bool kitchenSwitch = false;
 
   @override
-  void execute() {}
+  void execute([String? topic]) {}
 }

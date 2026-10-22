@@ -11,6 +11,9 @@ mixin DeviceBasePartMixin on IDevice implements PartOfIDevice {
     this.device = device;
   }
 
+  String get baseSwitchControl =>
+      '$name/base_switch';
+
   @override
   Set<String> addInputs() => {
     'base_switch/on',
