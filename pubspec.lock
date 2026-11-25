@@ -500,9 +500,11 @@ packages:
   wb_sdk:
     dependency: "direct main"
     description:
-      path: "../wb-sdk"
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: "05da24146f744ee2d79b0d535a39236410613c4f"
+      url: "https://github.com/AndreiLosev/wb-sdk"
+    source: git
     version: "1.0.0"
   web:
     dependency: transitive
